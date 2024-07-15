@@ -30,13 +30,15 @@ public:
     float mouseSpeed = 0.002f;
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
 
-    glm::mat4 update(GLFWwindow* window, float deltaTime)
-    {
-        static double lastX = 0, lastY = 0;
-        if (lastX == 0 && lastY == 0) {
-            glfwGetCursorPos(window, &lastX, &lastY);
-        }
+    GLFWwindow* window;
+    double lastX = 0, lastY = 0;
 
+    Camera(GLFWwindow* window) : window(window) {
+        glfwGetCursorPos(window, &lastX, &lastY);
+    }
+
+    glm::mat4 update(float deltaTime)
+    {
         double currentX, currentY;
         glfwGetCursorPos(window, &currentX, &currentY);
         double dx = currentX - lastX;
@@ -276,6 +278,13 @@ int main()
         loadTexture("src/models/MAC10_normal.png", &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(255, 255, 255, 255, &roughnessMap);
+        /*
+        loadModel("src/models/Sphere.obj", &vbo, &ibo, &count);
+        loadTexture("src/models/rustediron2_basecolor.png", &albedoMap);
+        loadTexture("src/models/rustediron2_normal.png", &normalMap);
+        loadTexture("src/models/rustediron2_metallic.png", &metallicMap);
+        loadTexture("src/models/rustediron2_roughness.png", &roughnessMap);
+        */
         compileShaders(&program, brdf_vert, brdf_frag);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -322,7 +331,7 @@ int main()
 
     int framerate = 120;
     double lastTime = 0;
-    Camera camera;
+    Camera camera(window);
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {
         glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
@@ -336,7 +345,7 @@ int main()
         lastTime = glfwGetTime();
 
         glm::mat4 uModel = glm::mat4(1.0f);
-        glm::mat4 PV = camera.update(window, deltaTime);
+        glm::mat4 PV = camera.update(deltaTime);
         glm::mat4 MVP = PV * uModel;
 
         glUseProgram(program);
