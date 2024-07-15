@@ -236,6 +236,34 @@ void compileShaders(GLuint* program, const char* vertex, const char* fragment)
 	glDeleteShader(vs);
 }
 
+void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* texture, GLuint* renderbuffer)
+{
+    glGenFramebuffers(1, framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, *framebuffer);
+
+    glGenTextures(1, texture);
+    glBindTexture(GL_TEXTURE_2D, *texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texture, 0);
+
+    if (renderbuffer) {
+        glGenRenderbuffers(1, renderbuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, *renderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *renderbuffer);
+    }
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::runtime_error("Incomplete framebuffer");
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 int main()
 {
     glfwInit();
@@ -271,6 +299,9 @@ int main()
     GLuint metallicMap;
     GLuint roughnessMap;
     GLuint program;
+    GLuint framebuffer;
+    GLuint targettexture;
+    GLuint depthbuffer;
 
     try {
         loadModel("src/models/MAC10.obj", &vbo, &ibo, &count);
@@ -286,6 +317,7 @@ int main()
         loadTexture("src/models/rustediron2_roughness.png", &roughnessMap);
         */
         compileShaders(&program, brdf_vert, brdf_frag);
+        createFramebuffer(width, height, &framebuffer, &targettexture, &depthbuffer);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
@@ -333,9 +365,8 @@ int main()
     double lastTime = 0;
     Camera camera(window);
 
+    glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {
-        glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float deltaTime = float(glfwGetTime() - lastTime);
         while (glfwGetTime() < (lastTime + 1.0/framerate)) {
@@ -353,6 +384,19 @@ int main()
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera.position[0]);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, albedoMap);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, targettexture);
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
 
