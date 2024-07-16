@@ -479,7 +479,8 @@ int main()
         glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
 
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder
