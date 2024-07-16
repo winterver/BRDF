@@ -268,7 +268,8 @@ void bakeHDR(const char* path, GLuint* cubemap)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);
-    stbi_uc* pixels = stbi_load(path, &width, &height, &channels, STBI_rgb);
+    float* pixels = stbi_loadf(path, &width, &height, &channels, STBI_rgb);
+    //stbi_uc* pixels = stbi_load(path, &width, &height, &channels, STBI_rgb);
 
     if (!pixels) {
         throw std::runtime_error(path);
@@ -276,27 +277,39 @@ void bakeHDR(const char* path, GLuint* cubemap)
 
     GLuint hdr;
     glGenTextures(1, &hdr);
+    /*
     glBindTexture(GL_TEXTURE_2D, hdr);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    */
 
     glGenTextures(1, cubemap);
     glBindTexture(GL_TEXTURE_CUBE_MAP, *cubemap);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB16F, 100, 100, 0, GL_RGB, GL_FLOAT, pixels);
+    /*
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    */
 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    /*
     static GLuint program = 0;
     static int face_Location;
     static GLuint framebuffer;
@@ -319,11 +332,12 @@ void bakeHDR(const char* path, GLuint* cubemap)
         glUniform1i(face_Location, i);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdr);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        //glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
     glViewport(view[0], view[1], (GLsizei)view[2], (GLsizei)view[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    */
 
     glDeleteTextures(1, &hdr);
     stbi_image_free(pixels);
@@ -388,6 +402,7 @@ int main()
         compileShaders(&program, brdf_vert, brdf_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubemap);
+        //bakeHDR("models/rustediron2_basecolor.png", &cubemap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
@@ -443,7 +458,9 @@ int main()
 
         glUseProgram(skyboxprog);
         int PV_Location = glGetUniformLocation(skyboxprog, "PV");
+        int skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
         glUniformMatrix4fv(PV_Location, 1, GL_FALSE, &PV[0][0]);
+        glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 

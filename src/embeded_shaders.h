@@ -142,12 +142,19 @@ R"( #version 330 core
 
     out vec2 TexCoords;
 
+    const vec2 vertices[] = {
+        vec2(-1, -1),
+        vec2(1, -1),
+        vec2(1, 1),
+        vec2(-1, -1),
+        vec2(1, 1),
+        vec2(-1, 1),
+    };
+
     void main() 
     {
-        float x = float((gl_VertexID & 1) << 2);
-        float y = float((gl_VertexID & 2) << 1);
-        gl_Position = vec4(x - 1.0, y - 1.0, 0, 1);
-        TexCoords = vec2(x, y) * 0.5;
+        TexCoords = vertices[gl_VertexID] * 0.5 + 0.5;
+        gl_Position = vec4(vertices[gl_VertexID], 0, 1);
     }
 )";
 const char* bakehdr_frag =
@@ -160,33 +167,9 @@ R"( #version 330 core
     uniform int face;
     uniform sampler2D HDR;
 
-    vec3 uvToXYZ(int face, vec2 uv)
-    {
-        vec3 XYZ[] = {
-            vec3( 1.0f,  uv.y, -uv.x),
-            vec3(-1.0f,  uv.y,  uv.x),
-            vec3( uv.x, -1.0f,  uv.y),
-            vec3( uv.x,  1.0f, -uv.y),
-            vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f),
-        };
-        return XYZ[face];
-    }
-
-    vec2 dirToUV(vec3 dir)
-    {
-        return vec2(
-            0.5f + 0.5f * atan(dir.z, dir.x) / MATH_PI,
-            1.0f - acos(dir.y) / MATH_PI);
-    }
-
     vec3 BakeCubeMap(sampler2D HDR, int face, vec2 coord)
     {
-        coord = coord * 2.0 - 1.0;
-        vec3 scan = uvToXYZ(face, coord);
-        vec3 direction = normalize(scan);
-        vec2 src = dirToUV(direction);
-        return texture(HDR, src).rgb;
+        return texture(HDR, coord).rgb;
     }
 
     void main(void)
