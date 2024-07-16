@@ -37,7 +37,7 @@ public:
         glfwGetCursorPos(window, &lastX, &lastY);
     }
 
-    glm::mat4 update(float deltaTime)
+    void update(float deltaTime, glm::mat4& projection, glm::mat4& view)
     {
         double currentX, currentY;
         glfwGetCursorPos(window, &currentX, &currentY);
@@ -96,10 +96,8 @@ public:
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
-        glm::mat4 view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
-
-        return projection * view;
+        projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
+        view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
     }
 };
 
@@ -396,7 +394,6 @@ int main()
         compileShaders(&program, brdf_vert, brdf_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubemap);
-        //bakeHDR("models/rustediron2_basecolor.png", &cubemap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
@@ -444,23 +441,27 @@ int main()
         }
         lastTime = glfwGetTime();
 
-        glm::mat4 uModel = glm::mat4(1.0f);
-        glm::mat4 PV = camera.update(deltaTime);
-        glm::mat4 MVP = PV * uModel;
+        glm::mat4 uProj, uView, uModel = glm::mat4(1.0f);
+        camera.update(deltaTime, uProj, uView);
+        glm::mat4 MVP = uProj * uView * uModel;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(skyboxprog);
-        int PV_Location = glGetUniformLocation(skyboxprog, "PV");
+        int uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
+        int uView_Location = glGetUniformLocation(skyboxprog, "uView");
         int skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
-        glUniformMatrix4fv(PV_Location, 1, GL_FALSE, &PV[0][0]);
+        glUniformMatrix4fv(uProj_Location, 1, GL_FALSE, &uProj[0][0]);
+        glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 
         glDepthMask(GL_FALSE);
+        glDisable(GL_CULL_FACE);
         glBindVertexArray(1);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
 
         glUseProgram(program);

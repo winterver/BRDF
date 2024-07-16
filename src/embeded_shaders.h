@@ -198,7 +198,8 @@ const char* skybox_vert =
 R"( #version 330 core
 
     out vec3 TexCoords;
-    uniform mat4 PV;
+    uniform mat4 uProj;
+    uniform mat4 uView;
 
     const vec3 vertices[8] = {
         vec3(0, 0, 0),
@@ -223,7 +224,7 @@ R"( #version 330 core
     void main()
     {
         TexCoords = (vertices[faces[gl_VertexID]] - 0.5)*2;
-        gl_Position = PV * vec4(TexCoords, 1.0);
+        gl_Position = uProj * mat4(mat3(uView)) * vec4(TexCoords, 1.0);
     }
 )";
 const char* skybox_frag =
