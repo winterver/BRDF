@@ -304,17 +304,17 @@ int main()
     GLuint depthbuffer;
 
     try {
-        loadModel("src/MAC10.obj", &vbo, &ibo, &count);
-        loadTexture("src/MAC10_albedo.png", &albedoMap);
-        loadTexture("src/MAC10_normal.png", &normalMap);
+        loadModel("models/MAC10.obj", &vbo, &ibo, &count);
+        loadTexture("models/MAC10_albedo.png", &albedoMap);
+        loadTexture("models/MAC10_normal.png", &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(255, 255, 255, 255, &roughnessMap);
         /*
-        loadModel("src/Sphere.obj", &vbo, &ibo, &count);
-        loadTexture("src/rustediron2_basecolor.png", &albedoMap);
-        loadTexture("src/rustediron2_normal.png", &normalMap);
-        loadTexture("src/rustediron2_metallic.png", &metallicMap);
-        loadTexture("src/rustediron2_roughness.png", &roughnessMap);
+        loadModel("models/Sphere.obj", &vbo, &ibo, &count);
+        loadTexture("models/rustediron2_basecolor.png", &albedoMap);
+        loadTexture("models/rustediron2_normal.png", &normalMap);
+        loadTexture("models/rustediron2_metallic.png", &metallicMap);
+        loadTexture("models/rustediron2_roughness.png", &roughnessMap);
         */
         compileShaders(&program, brdf_vert, brdf_frag);
         createFramebuffer(width, height, &framebuffer, &targettexture, &depthbuffer);
@@ -367,7 +367,6 @@ int main()
 
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {
-
         float deltaTime = float(glfwGetTime() - lastTime);
         while (glfwGetTime() < (lastTime + 1.0/framerate)) {
             deltaTime = 1.0f/framerate;
