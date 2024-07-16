@@ -304,17 +304,17 @@ int main()
     GLuint depthbuffer;
 
     try {
-        loadModel("src/models/MAC10.obj", &vbo, &ibo, &count);
-        loadTexture("src/models/MAC10_albedo.png", &albedoMap);
-        loadTexture("src/models/MAC10_normal.png", &normalMap);
+        loadModel("src/MAC10.obj", &vbo, &ibo, &count);
+        loadTexture("src/MAC10_albedo.png", &albedoMap);
+        loadTexture("src/MAC10_normal.png", &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(255, 255, 255, 255, &roughnessMap);
         /*
-        loadModel("src/models/Sphere.obj", &vbo, &ibo, &count);
-        loadTexture("src/models/rustediron2_basecolor.png", &albedoMap);
-        loadTexture("src/models/rustediron2_normal.png", &normalMap);
-        loadTexture("src/models/rustediron2_metallic.png", &metallicMap);
-        loadTexture("src/models/rustediron2_roughness.png", &roughnessMap);
+        loadModel("src/Sphere.obj", &vbo, &ibo, &count);
+        loadTexture("src/rustediron2_basecolor.png", &albedoMap);
+        loadTexture("src/rustediron2_normal.png", &normalMap);
+        loadTexture("src/rustediron2_metallic.png", &metallicMap);
+        loadTexture("src/rustediron2_roughness.png", &roughnessMap);
         */
         compileShaders(&program, brdf_vert, brdf_frag);
         createFramebuffer(width, height, &framebuffer, &targettexture, &depthbuffer);
