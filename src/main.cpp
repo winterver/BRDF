@@ -458,10 +458,8 @@ int main()
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 
         glDepthMask(GL_FALSE);
-        glDisable(GL_CULL_FACE);
         glBindVertexArray(1);
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
 
         glUseProgram(program);
