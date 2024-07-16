@@ -137,3 +137,105 @@ R"( #version 330 core
         FragColor = vec4(pow(Lo, vec3(1.0/2.2)), 1);
     }
 )";
+const char* bakehdr_vert =
+R"( #version 330 core
+
+    out vec2 TexCoords;
+
+    void main() 
+    {
+        float x = float((gl_VertexID & 1) << 2);
+        float y = float((gl_VertexID & 2) << 1);
+        gl_Position = vec4(x - 1.0, y - 1.0, 0, 1);
+        TexCoords = vec2(x, y) * 0.5;
+    }
+)";
+const char* bakehdr_frag =
+R"( #version 330 core
+    #define MATH_PI 3.1415926535897932384626433832795
+
+    in vec2 TexCoords;
+    out vec4 FragColor;
+
+    uniform int face;
+    uniform sampler2D HDR;
+
+    vec3 uvToXYZ(int face, vec2 uv)
+    {
+        vec3 XYZ[] = {
+            vec3( 1.0f,  uv.y, -uv.x),
+            vec3(-1.0f,  uv.y,  uv.x),
+            vec3( uv.x, -1.0f,  uv.y),
+            vec3( uv.x,  1.0f, -uv.y),
+            vec3( uv.x,  uv.y,  1.0f),
+            vec3(-uv.x,  uv.y, -1.0f),
+        };
+        return XYZ[face];
+    }
+
+    vec2 dirToUV(vec3 dir)
+    {
+        return vec2(
+            0.5f + 0.5f * atan(dir.z, dir.x) / MATH_PI,
+            1.0f - acos(dir.y) / MATH_PI);
+    }
+
+    vec3 BakeCubeMap(sampler2D HDR, int face, vec2 coord)
+    {
+        coord = coord * 2.0 - 1.0;
+        vec3 scan = uvToXYZ(face, coord);
+        vec3 direction = normalize(scan);
+        vec2 src = dirToUV(direction);
+        return texture(HDR, src).rgb;
+    }
+
+    void main(void)
+    {
+        FragColor = vec4(BakeCubeMap(HDR, face, TexCoords), 1);
+    }
+)";
+const char* skybox_vert =
+R"( #version 330 core
+
+    out vec3 TexCoords;
+    uniform mat4 PV;
+
+    const vec3 vertices[8] = {
+        vec3(0, 0, 0),
+        vec3(1, 0, 0),
+        vec3(0, 1, 0),
+        vec3(1, 1, 0),
+        vec3(0, 0, 1),
+        vec3(1, 0, 1),
+        vec3(0, 1, 1),
+        vec3(1, 1, 1),
+    };
+
+    const int faces[36] = {
+        5, 1, 3, 5, 3, 7, // +x
+        0, 4, 6, 0, 6, 2, // -x
+        4, 5, 7, 4, 7, 6, // +z
+        1, 0, 2, 1, 2, 3, // -z
+        6, 7, 3, 6, 3, 2, // +y
+        0, 1, 5, 0, 5, 4, // -y
+    };
+
+    void main()
+    {
+        TexCoords = (vertices[faces[gl_VertexID]] - 0.5)*2;
+        gl_Position = PV * vec4(TexCoords, 1.0);
+    }
+)";
+const char* skybox_frag =
+R"( #version 330 core
+
+    in vec3 TexCoords;
+    out vec4 FragColor;
+
+    uniform samplerCube skybox;
+
+    void main()
+    {    
+        FragColor = texture(skybox, TexCoords);
+    }
+)";

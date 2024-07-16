@@ -264,6 +264,75 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void bakeHDR(const char* path, GLuint* cubemap)
+{
+    int width, height, channels;
+    stbi_set_flip_vertically_on_load(true);
+    stbi_uc* pixels = stbi_load(path, &width, &height, &channels, STBI_rgb);
+
+    if (!pixels) {
+        throw std::runtime_error(path);
+    }
+
+    GLuint hdr;
+    glGenTextures(1, &hdr);
+    glBindTexture(GL_TEXTURE_2D, hdr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenTextures(1, cubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *cubemap);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_SRGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    static GLuint program = 0;
+    static int face_Location;
+    static GLuint framebuffer;
+
+    if (program == 0) {
+        compileShaders(&program, bakehdr_vert, bakehdr_frag);
+        face_Location = glGetUniformLocation(program, "face");
+        glGenFramebuffers(1, &framebuffer);
+    }
+
+    GLint view[4];
+    glGetIntegerv(GL_VIEWPORT, view);
+
+    glBindVertexArray(1);
+    for (int i = 0; i < 6; i++) {
+        glViewport(0, 0, 1024, 1024);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *cubemap, 0); 
+        glUseProgram(program);
+        glUniform1i(face_Location, i);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdr);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    glViewport(view[0], view[1], (GLsizei)view[2], (GLsizei)view[3]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glDeleteTextures(1, &hdr);
+    stbi_image_free(pixels);
+}
+
+void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam){
+	printf("Message : %s\n", message);
+}
+
 int main()
 {
     glfwInit();
@@ -286,6 +355,7 @@ int main()
 
     glfwMakeContextCurrent(window);
     gladLoadGL();
+    glDebugMessageCallbackARB(&DebugOutputCallback, NULL);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -299,9 +369,8 @@ int main()
     GLuint metallicMap;
     GLuint roughnessMap;
     GLuint program;
-    GLuint framebuffer;
-    GLuint targettexture;
-    GLuint depthbuffer;
+    GLuint skyboxprog;
+    GLuint cubemap;
 
     try {
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
@@ -317,7 +386,8 @@ int main()
         loadTexture("models/rustediron2_roughness.png", &roughnessMap);
         */
         compileShaders(&program, brdf_vert, brdf_frag);
-        createFramebuffer(width, height, &framebuffer, &targettexture, &depthbuffer);
+        compileShaders(&skyboxprog, skybox_vert, skybox_frag);
+        bakeHDR("models/dawn.hdr", &cubemap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
@@ -339,15 +409,6 @@ int main()
     glUniform1i(normalMap_Location, 1);
     glUniform1i(metallicMap_Location, 2);
     glUniform1i(roughnessMap_Location, 3);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, albedoMap);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normalMap);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, metallicMap);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, roughnessMap);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -378,24 +439,32 @@ int main()
         glm::mat4 PV = camera.update(deltaTime);
         glm::mat4 MVP = PV * uModel;
 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(skyboxprog);
+        int PV_Location = glGetUniformLocation(skyboxprog, "PV");
+        glUniformMatrix4fv(PV_Location, 1, GL_FALSE, &PV[0][0]);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+
+        glDepthMask(GL_FALSE);
+        glBindVertexArray(1);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+
         glUseProgram(program);
         glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera.position[0]);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, albedoMap);
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, normalMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, metallicMap);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, roughnessMap);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, targettexture);
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
 
