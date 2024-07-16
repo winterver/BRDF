@@ -120,10 +120,10 @@ R"( #version 330 core
         float R = texture(roughnessMap, TexCoords).r;
 
         #define NUM_LIGHTS 2
-        vec3 lightPos[] = {
+        vec3 lightPos[] = vec3[](
             vec3(0.0f, 0.0f, 10.0f),
-            vec3(10.0f, 0.0f, 0.0f),
-        };
+            vec3(10.0f, 0.0f, 0.0f)
+        );
 
         vec3 Lo = vec3(0.0);
         for (int i = 0; i < NUM_LIGHTS; i++) {
@@ -162,14 +162,14 @@ R"( #version 330 core
 
     vec3 uvToXYZ(int face, vec2 uv)
     {
-        vec3 XYZ[] = {
+        vec3 XYZ[] = vec3[](
             vec3( 1.0f,  uv.y, -uv.x),
             vec3(-1.0f,  uv.y,  uv.x),
             vec3( uv.x, -1.0f,  uv.y),
             vec3( uv.x,  1.0f, -uv.y),
             vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f),
-        };
+            vec3(-uv.x,  uv.y, -1.0f)
+        );
         return XYZ[face];
     }
 
@@ -206,19 +206,20 @@ R"( #version 330 core
 
     vec3 uvToXYZ(int face, vec2 uv)
     {
-        vec3 XYZ[] = {
+        vec3 XYZ[] = vec3[](
             vec3( 1.0f,  uv.y, -uv.x),
             vec3(-1.0f,  uv.y,  uv.x),
             vec3( uv.x, -1.0f,  uv.y),
             vec3( uv.x,  1.0f, -uv.y),
             vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f),
-        };
+            vec3(-uv.x,  uv.y, -1.0f)
+        );
         return XYZ[face];
     }
 
     void main()
     {
+        /*
         vec3 scan = uvToXYZ(face, TexCoords*2.0-1.0);
         vec3 N = normalize(scan);
         vec3 irradiance = vec3(0.0);   
@@ -244,6 +245,8 @@ R"( #version 330 core
 
         irradiance = PI * irradiance * (1.0 / float(nrSamples));
         FragColor = vec4(irradiance, 1.0);
+        */
+        FragColor = vec4(1);
     }
 )";
 const char* skybox_vert =
@@ -253,7 +256,7 @@ R"( #version 330 core
     uniform mat4 uProj;
     uniform mat4 uView;
 
-    const vec3 vertices[8] = {
+    const vec3 vertices[] = vec3[](
         vec3(0, 0, 0),
         vec3(1, 0, 0),
         vec3(0, 1, 0),
@@ -261,17 +264,17 @@ R"( #version 330 core
         vec3(0, 0, 1),
         vec3(1, 0, 1),
         vec3(0, 1, 1),
-        vec3(1, 1, 1),
-    };
+        vec3(1, 1, 1)
+    );
 
-    const int faces[36] = {
+    const int faces[] = int[](
         5, 3, 1, 5, 7, 3, // +x
         0, 6, 4, 0, 2, 6, // -x
         4, 7, 5, 4, 6, 7, // +z
         1, 2, 0, 1, 3, 2, // -z
         6, 3, 7, 6, 2, 3, // +y
-        0, 5, 1, 0, 4, 5, // -y
-    };
+        0, 5, 1, 0, 4, 5  // -y
+    );
 
     void main()
     {

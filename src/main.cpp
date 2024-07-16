@@ -256,7 +256,7 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
     }
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::runtime_error("Incomplete framebuffer");
+        throw std::runtime_error("Incomplete framebuffer");
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -337,8 +337,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
-
-    /*
+    
     for (int i = 0; i < 6; i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *irradianceMap, 0); 
@@ -351,13 +350,16 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
-    */
-
+    
     glViewport(view[0], view[1], (GLsizei)view[2], (GLsizei)view[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDeleteTextures(1, &hdr);
     stbi_image_free(pixels);
+}
+
+void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    printf("Message : %s\n", message);
 }
 
 int main()
@@ -382,6 +384,7 @@ int main()
 
     glfwMakeContextCurrent(window);
     gladLoadGL();
+    glDebugMessageCallbackARB(&DebugOutputCallback, NULL);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -479,7 +482,7 @@ int main()
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
         glDepthMask(GL_FALSE);
-        glBindVertexArray(1);
+        glBindVertexArray(vao); // placeholder
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
 
