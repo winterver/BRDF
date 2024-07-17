@@ -409,12 +409,12 @@ void loadBRDFLUT(const char* path, GLuint* brdflutMap, int size = 512)
     }
 
     file.seekg(128); // skip header
-    float* data = new float[2*size*size];
-    file.read((char*)data, sizeof(float)*2*size*size);
+    char* data = new char[4*size*size];
+    file.read(data, 4*size*size);
 
     glGenTextures(1, brdflutMap);
     glBindTexture(GL_TEXTURE_2D, *brdflutMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_HALF_FLOAT, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
