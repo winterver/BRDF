@@ -262,7 +262,7 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
+void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(false);
@@ -289,7 +289,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -309,13 +309,30 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    glGenTextures(1, prefilterMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *prefilterMap);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
     static GLuint program = 0;
     static GLuint convolution;
+    static GLuint prefilter;
     static GLuint vao;
 
     if (program == 0) {
         compileShaders(&program, bakehdr_vert, bakehdr_frag);
         compileShaders(&convolution, bakehdr_vert, bakehdr_irradiance_convolution_frag);
+        compileShaders(&prefilter, bakehdr_vert, bakehdr_prefilter_frag);
         glGenVertexArrays(1, &vao);
     }
 
@@ -337,6 +354,8 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
         glBindTexture(GL_TEXTURE_2D, hdr);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *cubeMap);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
     
     for (int i = 0; i < 6; i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -347,6 +366,30 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, *cubeMap);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
+
+    unsigned int maxMipLevels = 5;
+    for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
+    {
+        unsigned int mipWidth  = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
+        unsigned int mipHeight = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *prefilterMap, mip);
+            glUseProgram(prefilter);
+            int face_Location = glGetUniformLocation(prefilter, "face");
+            int roughness_Location = glGetUniformLocation(prefilter, "roughness");
+            glUniform1i(face_Location, i);
+            glUniform1f(roughness_Location, roughness);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, *cubeMap);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
     }
     
     glViewport(view[0], view[1], view[2], view[3]);
@@ -401,6 +444,7 @@ int main()
     GLuint skyboxprog;
     GLuint cubeMap;
     GLuint irradianceMap;
+    GLuint prefilterMap;
 
     try {
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
@@ -417,7 +461,7 @@ int main()
         */
         compileShaders(&program, brdf_vert, brdf_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
-        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap);
+        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
@@ -481,7 +525,9 @@ int main()
         glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder
