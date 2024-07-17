@@ -432,7 +432,7 @@ R"( #version 330 core
         vec3 right = normalize(cross(up, N));
         up         = normalize(cross(N, right));
            
-        float sampleDelta = 0.15; // setting this too small may crash your program
+        float sampleDelta = 0.025;
         float nrSamples = 0.0;
 
         for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
@@ -533,7 +533,7 @@ R"( #version 330 core
         vec3 R = N;
         vec3 V = R;
 
-        const uint SAMPLE_COUNT = 102u;//1024u;
+        const uint SAMPLE_COUNT = 1024u;
         vec3 prefilteredColor = vec3(0.0);
         float totalWeight = 0.0;
         
