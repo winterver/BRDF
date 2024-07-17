@@ -324,34 +324,31 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap)
     GLint view[4];
     glGetIntegerv(GL_VIEWPORT, view);
     glViewport(0, 0, 1024, 1024);
+    glBindVertexArray(vao);
 
     for (int i = 0; i < 6; i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *cubeMap, 0); 
-        glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(program);
         int face_Location = glGetUniformLocation(program, "face");
         glUniform1i(face_Location, i);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdr);
-        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
     
     for (int i = 0; i < 6; i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *irradianceMap, 0); 
-        glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(convolution);
         int face_Location = glGetUniformLocation(convolution, "face");
         glUniform1i(face_Location, i);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, *cubeMap);
-        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
     
-    glViewport(view[0], view[1], (GLsizei)view[2], (GLsizei)view[3]);
+    glViewport(view[0], view[1], view[2], view[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDeleteTextures(1, &hdr);
