@@ -483,7 +483,7 @@ int main()
         loadTexture("models/rustediron2_metallic.png", &metallicMap);
         loadTexture("models/rustediron2_roughness.png", &roughnessMap);
         */
-        compileShaders(&program, brdf_vert, brdf_frag);
+        compileShaders(&program, pbr_vert, pbr_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
         loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
@@ -495,21 +495,22 @@ int main()
     glBindAttribLocation(program, 0, "aPosition");
     glBindAttribLocation(program, 1, "aNormal");
     glBindAttribLocation(program, 2, "aTexCoords");
-    GLuint MVP_Location = glGetUniformLocation(program, "MVP");
-    GLuint uModel_Location = glGetUniformLocation(program, "uModel");
-    GLuint viewPos_Location = glGetUniformLocation(program, "viewPos");
+
+    glUseProgram(program);
     GLuint albedoMap_Location = glGetUniformLocation(program, "albedoMap");
     GLuint normalMap_Location = glGetUniformLocation(program, "normalMap");
     GLuint metallicMap_Location = glGetUniformLocation(program, "metallicMap");
     GLuint roughnessMap_Location = glGetUniformLocation(program, "roughnessMap");
     GLuint irradianceMap_Location = glGetUniformLocation(program, "irradianceMap");
-
-    glUseProgram(program);
+    GLuint prefilterMap_Location = glGetUniformLocation(program, "prefilterMap");
+    GLuint brdflutMap_Location = glGetUniformLocation(program, "brdflutMap");
     glUniform1i(albedoMap_Location, 0);
     glUniform1i(normalMap_Location, 1);
     glUniform1i(metallicMap_Location, 2);
     glUniform1i(roughnessMap_Location, 3);
     glUniform1i(irradianceMap_Location, 4);
+    glUniform1i(prefilterMap_Location, 5);
+    glUniform1i(brdflutMap_Location, 6);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -551,8 +552,6 @@ int main()
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder
@@ -560,6 +559,9 @@ int main()
         glDepthMask(GL_TRUE);
 
         glUseProgram(program);
+        int MVP_Location = glGetUniformLocation(program, "MVP");
+        int uModel_Location = glGetUniformLocation(program, "uModel");
+        int viewPos_Location = glGetUniformLocation(program, "viewPos");
         glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera.position[0]);
@@ -573,6 +575,10 @@ int main()
         glBindTexture(GL_TEXTURE_2D, roughnessMap);
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, brdflutMap);
 
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);

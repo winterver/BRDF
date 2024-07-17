@@ -1,4 +1,4 @@
-const char* brdf_vert =
+const char* pbr_vert =
 R"( #version 330 core
     
     in vec3 aPosition;
@@ -19,7 +19,7 @@ R"( #version 330 core
         TexCoords = aTexCoords;
     }
 )";
-const char* brdf_frag =
+const char* pbr_frag =
 R"( #version 330 core
 
     in vec3 WorldPos;
@@ -33,6 +33,8 @@ R"( #version 330 core
     uniform sampler2D metallicMap;
     uniform sampler2D roughnessMap;
     uniform samplerCube irradianceMap;
+    uniform samplerCube prefilterMap;
+    uniform sampler2D brdflutMap;
 
     uniform vec3 viewPos;
 
