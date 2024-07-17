@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <thread>
+#include <fstream>
 
 #include "glad.h"
 #include "stb_image.h"
@@ -262,7 +263,7 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap, GLuint* brdflutMap)
+void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);
@@ -323,16 +324,6 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-
-    /*
-    glGenTextures(1, brdflutMap);
-    glBindTexture(GL_TEXTURE_2D, *brdflutMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 1024, 1024, 0, GL_RG, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    */
 
     static GLuint program = 0;
     static GLuint convolution;
@@ -410,6 +401,28 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     stbi_image_free(pixels);
 }
 
+void loadBRDFLUT(const char* path, GLuint* brdflutMap, int size = 512)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to load BRDF LUT");
+    }
+
+    file.seekg(128); // skip header
+    float* data = new float[2*size*size];
+    file.read((char*)data, sizeof(float)*2*size*size);
+
+    glGenTextures(1, brdflutMap);
+    glBindTexture(GL_TEXTURE_2D, *brdflutMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    delete[] data;
+}
+
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     printf("Message : %s\n", message);
 }
@@ -472,7 +485,8 @@ int main()
         */
         compileShaders(&program, brdf_vert, brdf_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
-        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap, &brdflutMap);
+        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
+        loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
