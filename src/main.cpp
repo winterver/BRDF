@@ -265,7 +265,7 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
 void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
 {
     int width, height, channels;
-    stbi_set_flip_vertically_on_load(false);
+    stbi_set_flip_vertically_on_load(true);
     float* pixels = stbi_loadf(path, &width, &height, &channels, STBI_rgb);
 
     if (!pixels) {
@@ -371,8 +371,8 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     unsigned int maxMipLevels = 5;
     for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
     {
-        unsigned int mipWidth  = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
-        unsigned int mipHeight = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
+        int mipWidth  = (int)(1024 * std::pow(0.5, mip));
+        int mipHeight = (int)(1024 * std::pow(0.5, mip));
         glViewport(0, 0, mipWidth, mipHeight);
 
         float roughness = (float)mip / (float)(maxMipLevels - 1);
@@ -525,9 +525,9 @@ int main()
         glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
         //glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder

@@ -169,12 +169,12 @@ R"( #version 330 core
     vec3 uvToXYZ(int face, vec2 uv)
     {
         vec3 XYZ[] = vec3[](
-            vec3( 1.0f,  uv.y, -uv.x),
-            vec3(-1.0f,  uv.y,  uv.x),
-            vec3( uv.x, -1.0f,  uv.y),
-            vec3( uv.x,  1.0f, -uv.y),
-            vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f)
+            vec3( 1.0f, -uv.y, -uv.x),
+            vec3(-1.0f, -uv.y,  uv.x),
+            vec3( uv.x,  1.0f,  uv.y),
+            vec3( uv.x, -1.0f, -uv.y),
+            vec3( uv.x, -uv.y,  1.0f),
+            vec3(-uv.x, -uv.y, -1.0f)
         );
         return XYZ[face];
     }
@@ -213,12 +213,12 @@ R"( #version 330 core
     vec3 uvToXYZ(int face, vec2 uv)
     {
         vec3 XYZ[] = vec3[](
-            vec3( 1.0f,  uv.y, -uv.x),
-            vec3(-1.0f,  uv.y,  uv.x),
-            vec3( uv.x, -1.0f,  uv.y),
-            vec3( uv.x,  1.0f, -uv.y),
-            vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f)
+            vec3( 1.0f, -uv.y, -uv.x),
+            vec3(-1.0f, -uv.y,  uv.x),
+            vec3( uv.x,  1.0f,  uv.y),
+            vec3( uv.x, -1.0f, -uv.y),
+            vec3( uv.x, -uv.y,  1.0f),
+            vec3(-uv.x, -uv.y, -1.0f)
         );
         return XYZ[face];
     }
@@ -226,7 +226,6 @@ R"( #version 330 core
     void main()
     {
         vec3 scan = uvToXYZ(face, TexCoords*2.0-1.0);
-        scan.y = -scan.y;
         vec3 N = normalize(scan);
         vec3 irradiance = vec3(0.0);   
         
@@ -318,12 +317,12 @@ R"( #version 330 core
     vec3 uvToXYZ(int face, vec2 uv)
     {
         vec3 XYZ[] = vec3[](
-            vec3( 1.0f,  uv.y, -uv.x),
-            vec3(-1.0f,  uv.y,  uv.x),
-            vec3( uv.x, -1.0f,  uv.y),
-            vec3( uv.x,  1.0f, -uv.y),
-            vec3( uv.x,  uv.y,  1.0f),
-            vec3(-uv.x,  uv.y, -1.0f)
+            vec3( 1.0f, -uv.y, -uv.x),
+            vec3(-1.0f, -uv.y,  uv.x),
+            vec3( uv.x,  1.0f,  uv.y),
+            vec3( uv.x, -1.0f, -uv.y),
+            vec3( uv.x, -uv.y,  1.0f),
+            vec3(-uv.x, -uv.y, -1.0f)
         );
         return XYZ[face];
     }
@@ -331,7 +330,6 @@ R"( #version 330 core
     void main()
     {		
         vec3 scan = uvToXYZ(face, TexCoords*2.0-1.0);
-        scan.y = -scan.y;
         vec3 N = normalize(scan);       
         vec3 R = N;
         vec3 V = R;
