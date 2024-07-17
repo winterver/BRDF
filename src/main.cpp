@@ -262,7 +262,7 @@ void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* textu
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
+void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap, GLuint* brdflutMap)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);
@@ -324,6 +324,16 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
+    /*
+    glGenTextures(1, brdflutMap);
+    glBindTexture(GL_TEXTURE_2D, *brdflutMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 1024, 1024, 0, GL_RG, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    */
+
     static GLuint program = 0;
     static GLuint convolution;
     static GLuint prefilter;
@@ -341,10 +351,10 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
 
     GLint view[4];
     glGetIntegerv(GL_VIEWPORT, view);
-    glViewport(0, 0, 1024, 1024);
     glBindVertexArray(vao);
 
     for (int i = 0; i < 6; i++) {
+        glViewport(0, 0, 1024, 1024);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *cubeMap, 0); 
         glUseProgram(program);
@@ -358,6 +368,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
     
     for (int i = 0; i < 6; i++) {
+        glViewport(0, 0, 1024, 1024);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *irradianceMap, 0); 
         glUseProgram(convolution);
@@ -373,12 +384,11 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     {
         int mipWidth  = (int)(1024 * std::pow(0.5, mip));
         int mipHeight = (int)(1024 * std::pow(0.5, mip));
-        glViewport(0, 0, mipWidth, mipHeight);
-
         float roughness = (float)mip / (float)(maxMipLevels - 1);
 
         for (unsigned int i = 0; i < 6; ++i)
         {
+            glViewport(0, 0, mipWidth, mipHeight);
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *prefilterMap, mip);
             glUseProgram(prefilter);
@@ -445,6 +455,7 @@ int main()
     GLuint cubeMap;
     GLuint irradianceMap;
     GLuint prefilterMap;
+    GLuint brdflutMap;
 
     try {
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
@@ -461,7 +472,7 @@ int main()
         */
         compileShaders(&program, brdf_vert, brdf_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
-        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
+        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap, &brdflutMap);
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
         return -1;
