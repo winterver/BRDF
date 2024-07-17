@@ -471,18 +471,18 @@ int main()
     GLuint brdflutMap;
 
     try {
+        /*
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
         loadTexture("models/MAC10_albedo.png", &albedoMap);
         loadTexture("models/MAC10_normal.png", &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(255, 255, 255, 255, &roughnessMap);
-        /*
+        */
         loadModel("models/Sphere.obj", &vbo, &ibo, &count);
         loadTexture("models/rustediron2_basecolor.png", &albedoMap);
         loadTexture("models/rustediron2_normal.png", &normalMap);
         loadTexture("models/rustediron2_metallic.png", &metallicMap);
         loadTexture("models/rustediron2_roughness.png", &roughnessMap);
-        */
         compileShaders(&program, pbr_vert, pbr_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);

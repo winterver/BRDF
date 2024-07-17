@@ -82,8 +82,7 @@ R"( #version 330 core
     vec3 F_Schlick(float cosTheta, float metallic)
     {
         vec3 F0 = mix(vec3(0.04), materialcolor(), metallic); // * material.specular
-        vec3 F = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
-        return F;    
+        return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
     }
 
     vec3 BRDF(vec3 L, vec3 V, vec3 N, float metallic, float roughness)
@@ -114,6 +113,12 @@ R"( #version 330 core
 
         return color;
     }
+
+    vec3 F_SchlickRoughness(float cosTheta, float metallic, float roughness)
+    {
+        vec3 F0 = mix(vec3(0.04), materialcolor(), metallic);
+        return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+    } 
     
     void main()
     {
@@ -135,12 +140,18 @@ R"( #version 330 core
           Lo += BRDF(L, V, N, M, R);
         }
 
-        vec3 kS = F_Schlick(max(dot(N, V), 0.0), M);
+        vec3 kS = F_SchlickRoughness(max(dot(N, V), 0.0), M, R);
         vec3 kD = (1.0 - kS) * (1.0 - M);
+
         vec3 irradiance = texture(irradianceMap, N).rgb;
         vec3 diffuse    = irradiance * materialcolor();
 
-        Lo += kD * diffuse;
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilter = textureLod(prefilterMap, reflect(-V, N), R * MAX_REFLECTION_LOD).rgb;    
+        vec2 brdf      = texture(brdflutMap, vec2(max(dot(N, V), 0.0), R)).rg;
+        vec3 specular  = prefilter * (kS * brdf.x + brdf.y);
+
+        Lo += kD * diffuse + specular;
 
         FragColor = vec4(pow(Lo, vec3(1.0/2.2)), 1);
     }
