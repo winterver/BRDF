@@ -32,6 +32,7 @@ R"( #version 330 core
     uniform sampler2D normalMap;
     uniform sampler2D metallicMap;
     uniform sampler2D roughnessMap;
+    uniform samplerCube irradianceMap;
 
     uniform vec3 viewPos;
 
@@ -132,7 +133,12 @@ R"( #version 330 core
           Lo += BRDF(L, V, N, M, R);
         }
 
-        Lo += materialcolor() * 0.03;
+        vec3 kS = F_Schlick(max(dot(N, V), 0.0), M);
+        vec3 kD = (1.0 - kS) * (1.0 - M);
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse    = irradiance * materialcolor();
+
+        Lo += kD * diffuse;
 
         FragColor = vec4(pow(Lo, vec3(1.0/2.2)), 1);
     }

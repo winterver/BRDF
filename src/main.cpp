@@ -433,12 +433,14 @@ int main()
     GLuint normalMap_Location = glGetUniformLocation(program, "normalMap");
     GLuint metallicMap_Location = glGetUniformLocation(program, "metallicMap");
     GLuint roughnessMap_Location = glGetUniformLocation(program, "roughnessMap");
+    GLuint irradianceMap_Location = glGetUniformLocation(program, "irradianceMap");
 
     glUseProgram(program);
     glUniform1i(albedoMap_Location, 0);
     glUniform1i(normalMap_Location, 1);
     glUniform1i(metallicMap_Location, 2);
     glUniform1i(roughnessMap_Location, 3);
+    glUniform1i(irradianceMap_Location, 4);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -479,8 +481,7 @@ int main()
         glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder
@@ -499,6 +500,8 @@ int main()
         glBindTexture(GL_TEXTURE_2D, metallicMap);
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, roughnessMap);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
 
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
