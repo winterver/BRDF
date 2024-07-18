@@ -235,34 +235,6 @@ void compileShaders(GLuint* program, const char* vertex, const char* fragment)
     glDeleteShader(vs);
 }
 
-void createFramebuffer(int width, int height, GLuint* framebuffer, GLuint* texture, GLuint* renderbuffer)
-{
-    glGenFramebuffers(1, framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, *framebuffer);
-
-    glGenTextures(1, texture);
-    glBindTexture(GL_TEXTURE_2D, *texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texture, 0);
-
-    if (renderbuffer) {
-        glGenRenderbuffers(1, renderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, *renderbuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *renderbuffer);
-    }
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        throw std::runtime_error("Incomplete framebuffer");
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
 {
     int width, height, channels;
@@ -682,8 +654,13 @@ int main()
         glActiveTexture(GL_TEXTURE6);
         glBindTexture(GL_TEXTURE_2D, brdflutMap);
 
-        //glBindVertexArray(vao);
-        //glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
+
+        uModel = glm::translate(glm::vec3(2,0,0));
+        MVP = uProj * uView * uModel;
+        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
+        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         renderSphere();
 
         glfwSwapBuffers(window);
