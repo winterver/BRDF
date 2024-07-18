@@ -555,8 +555,8 @@ int main()
         makeTexture(128, 128, 255, 255, &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(0, 0, 0, 255, &roughnessMap);
-        //compileShaders(&program, pbr_vert, pbr_frag);
-        compileShaders(&program, pbr_vert, pbr_frag_learnopengl);
+        compileShaders(&program, pbr_vert, pbr_frag);
+        //compileShaders(&program, pbr_vert, pbr_frag_learnopengl);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
         loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);

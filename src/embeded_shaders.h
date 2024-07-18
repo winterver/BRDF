@@ -127,10 +127,12 @@ R"( #version 330 core
         float M = texture(metallicMap, TexCoords).r;
         float R = texture(roughnessMap, TexCoords).r;
 
-        #define NUM_LIGHTS 2
+        #define NUM_LIGHTS 4
         vec3 lightPos[] = vec3[](
-            vec3(0.0f, 0.0f, 10.0f),
-            vec3(10.0f, 0.0f, 0.0f)
+            vec3(1.0f, 0.0f, 0.0f),
+            vec3(-1.0f, 0.0f, 0.0f),
+            vec3(0.0f, 0.0f, 1.0f),
+            vec3(0.0f, 0.0f, -1.0f)
         );
 
         vec3 Lo = vec3(0.0);
