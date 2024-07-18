@@ -613,9 +613,8 @@ R"( #version 330 core
     void main()
     {    
         vec3 color = texture(skybox, TexCoords).rgb;
-        //vec3 color = textureLod(skybox, TexCoords, 1.2).rgb;
-        //color = color / (color + vec3(1.0));
-        //color = pow(color, vec3(1.0/2.2));
+        color = color / (color + vec3(1.0));
+        color = pow(color, vec3(1.0/2.2));
         FragColor = vec4(color, 1);
     }
 )";
