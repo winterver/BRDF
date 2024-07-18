@@ -102,102 +102,8 @@ public:
     }
 };
 
-bool loadOBJ(
-	const char * path, 
-	std::vector<glm::vec3> & out_vertices, 
-	std::vector<glm::vec2> & out_uvs,
-	std::vector<glm::vec3> & out_normals
-){
-	printf("Loading OBJ file %s...\n", path);
-
-	std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
-	std::vector<glm::vec3> temp_vertices; 
-	std::vector<glm::vec2> temp_uvs;
-	std::vector<glm::vec3> temp_normals;
-
-
-	FILE * file = fopen(path, "r");
-	if( file == NULL ){
-		printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
-		getchar();
-		return false;
-	}
-
-	while( 1 ){
-
-		char lineHeader[128];
-		// read the first word of the line
-		int res = fscanf(file, "%s", lineHeader);
-		if (res == EOF)
-			break; // EOF = End Of File. Quit the loop.
-
-		// else : parse lineHeader
-		
-		if ( strcmp( lineHeader, "v" ) == 0 ){
-			glm::vec3 vertex;
-			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
-			temp_vertices.push_back(vertex);
-		}else if ( strcmp( lineHeader, "vt" ) == 0 ){
-			glm::vec2 uv;
-			fscanf(file, "%f %f\n", &uv.x, &uv.y );
-			uv.y = -uv.y; // Invert V coordinate since we will only use DDS texture, which are inverted. Remove if you want to use TGA or BMP loaders.
-			temp_uvs.push_back(uv);
-		}else if ( strcmp( lineHeader, "vn" ) == 0 ){
-			glm::vec3 normal;
-			fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
-			temp_normals.push_back(normal);
-		}else if ( strcmp( lineHeader, "f" ) == 0 ){
-			std::string vertex1, vertex2, vertex3;
-			unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
-			int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
-			if (matches != 9){
-				printf("File can't be read by our simple parser :-( Try exporting with other options\n");
-				fclose(file);
-				return false;
-			}
-			vertexIndices.push_back(vertexIndex[0]);
-			vertexIndices.push_back(vertexIndex[1]);
-			vertexIndices.push_back(vertexIndex[2]);
-			uvIndices    .push_back(uvIndex[0]);
-			uvIndices    .push_back(uvIndex[1]);
-			uvIndices    .push_back(uvIndex[2]);
-			normalIndices.push_back(normalIndex[0]);
-			normalIndices.push_back(normalIndex[1]);
-			normalIndices.push_back(normalIndex[2]);
-		}else{
-			// Probably a comment, eat up the rest of the line
-			char stupidBuffer[1000];
-			fgets(stupidBuffer, 1000, file);
-		}
-
-	}
-
-	// For each vertex of each triangle
-	for( unsigned int i=0; i<vertexIndices.size(); i++ ){
-
-		// Get the indices of its attributes
-		unsigned int vertexIndex = vertexIndices[i];
-		unsigned int uvIndex = uvIndices[i];
-		unsigned int normalIndex = normalIndices[i];
-		
-		// Get the attributes thanks to the index
-		glm::vec3 vertex = temp_vertices[ vertexIndex-1 ];
-		glm::vec2 uv = temp_uvs[ uvIndex-1 ];
-		glm::vec3 normal = temp_normals[ normalIndex-1 ];
-		
-		// Put the attributes in buffers
-		out_vertices.push_back(vertex);
-		out_uvs     .push_back(uv);
-		out_normals .push_back(normal);
-	
-	}
-	fclose(file);
-	return true;
-}
-
 void loadModel(const char* path, GLuint* buffer, GLuint* index, int* nIndices)
 {
-    /*
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::string warn, err;
@@ -241,25 +147,6 @@ void loadModel(const char* path, GLuint* buffer, GLuint* index, int* nIndices)
 
             indices.push_back(uniqueVertices[vtx]);
         }
-    }
-    */
-
-    std::vector<glm::vec3> positions; 
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec2> uvs;
-    if (!loadOBJ(path, positions, uvs, normals)) {
-        throw std::runtime_error("Failed to load model");
-    }
-
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    for (int i = 0; i < positions.size(); i++) {
-        Vertex vertex{};
-        vertex.position = positions[i];
-        vertex.normal = normals[i];
-        vertex.texcoords = uvs[i];
-        vertices.push_back(vertex);
-        indices.push_back(i);
     }
 
     glGenBuffers(1, buffer);
@@ -508,10 +395,6 @@ void loadBRDFLUT(const char* path, GLuint* brdflutMap, int size = 512)
     delete[] data;
 }
 
-void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    printf("Message : %s\n", message);
-}
-
 unsigned int sphereVAO = 0;
 GLsizei indexCount;
 void renderSphere()
@@ -607,6 +490,10 @@ void renderSphere()
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
 
+void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    printf("Message : %s\n", message);
+}
+
 int main()
 {
     glfwInit();
@@ -651,14 +538,13 @@ int main()
     GLuint brdflutMap;
 
     try {
-        /*
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
+        /*
         loadTexture("models/MAC10_albedo.png", &albedoMap);
         loadTexture("models/MAC10_normal.png", &normalMap);
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(0, 0, 0, 255, &roughnessMap);
         */
-        loadModel("models/Sphere.obj", &vbo, &ibo, &count);
         /*
         loadTexture("models/rustediron2_basecolor.png", &albedoMap);
         loadTexture("models/rustediron2_normal.png", &normalMap);
@@ -767,13 +653,6 @@ int main()
         glActiveTexture(GL_TEXTURE6);
         glBindTexture(GL_TEXTURE_2D, brdflutMap);
 
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
-
-        uModel = glm::translate(glm::vec3(2,0,0));
-        MVP = uProj * uView * uModel;
-        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
-        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         renderSphere();
 
         glfwSwapBuffers(window);
