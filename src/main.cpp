@@ -539,9 +539,9 @@ int main()
 
     try {
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
-        /*
         loadTexture("models/MAC10_albedo.png", &albedoMap);
         loadTexture("models/MAC10_normal.png", &normalMap);
+        /*
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(0, 0, 0, 255, &roughnessMap);
         */
@@ -550,13 +550,12 @@ int main()
         loadTexture("models/rustediron2_normal.png", &normalMap);
         loadTexture("models/rustediron2_metallic.png", &metallicMap);
         loadTexture("models/rustediron2_roughness.png", &roughnessMap);
-        */
         makeTexture(255, 255, 255, 255, &albedoMap);
         makeTexture(128, 128, 255, 255, &normalMap);
+        */
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(0, 0, 0, 255, &roughnessMap);
         compileShaders(&program, pbr_vert, pbr_frag);
-        //compileShaders(&program, pbr_vert, pbr_frag_learnopengl);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
         bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
         loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
@@ -653,7 +652,9 @@ int main()
         glActiveTexture(GL_TEXTURE6);
         glBindTexture(GL_TEXTURE_2D, brdflutMap);
 
-        renderSphere();
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
+        //renderSphere();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
