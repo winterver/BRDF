@@ -22,6 +22,103 @@ struct Vertex
     glm::vec2 texcoords;
 };
 
+void linkProgram(GLuint* program, GLuint vs, GLuint fs);
+
+class PBRProgram
+{
+public:
+    PBRProgram() {
+        linkProgram(&program, Shaders::pbrVertexShader(), Shaders::pbrFragmentShader());
+
+        glBindAttribLocation(program, 0, "aPosition");
+        glBindAttribLocation(program, 1, "aNormal");
+        glBindAttribLocation(program, 2, "aTexCoords");
+
+        glUseProgram(program);
+        GLuint albedoMap_Location = glGetUniformLocation(program, "albedoMap");
+        GLuint normalMap_Location = glGetUniformLocation(program, "normalMap");
+        GLuint metallicMap_Location = glGetUniformLocation(program, "metallicMap");
+        GLuint roughnessMap_Location = glGetUniformLocation(program, "roughnessMap");
+        GLuint irradianceMap_Location = glGetUniformLocation(program, "irradianceMap");
+        GLuint prefilterMap_Location = glGetUniformLocation(program, "prefilterMap");
+        GLuint brdflutMap_Location = glGetUniformLocation(program, "brdflutMap");
+        glUniform1i(albedoMap_Location, 0);
+        glUniform1i(normalMap_Location, 1);
+        glUniform1i(metallicMap_Location, 2);
+        glUniform1i(roughnessMap_Location, 3);
+        glUniform1i(irradianceMap_Location, 4);
+        glUniform1i(prefilterMap_Location, 5);
+        glUniform1i(brdflutMap_Location, 6);
+    }
+
+    void use() const { glUseProgram(program); }
+    GLuint getProgram() const { return program; }
+
+    PBRProgram(const PBRProgram&) = delete;
+    void operator=(const PBRProgram&) = delete;
+
+    static const PBRProgram& getInstance() {
+        static PBRProgram instance;
+        return instance;
+    }
+
+private:
+    GLuint program;
+};
+
+class PBRMaterial
+{
+public:
+    PBRMaterial()
+        : program(PBRProgram::getInstance())
+        , albedoMap(0)
+        , normalMap(0)
+        , metallicMap(0)
+        , roughnessMap(0)
+        , irradianceMap(0)
+        , prefilterMap(0)
+        , brdflutMap(0)
+    { }
+
+    void use() const {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, albedoMap);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, normalMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, metallicMap);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, roughnessMap);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, brdflutMap);
+        program.use();
+    }
+
+    GLuint getProgram() const { return program.getProgram(); }
+
+    void setAlbedoMap(GLuint map) { albedoMap = map; }
+    void setNormalMap(GLuint map) { normalMap = map; }
+    void setMetallicMap(GLuint map) { metallicMap = map; }
+    void setRoughnessMap(GLuint map) { roughnessMap = map; }
+    void setIrradianceMap(GLuint map) { irradianceMap = map; }
+    void setPrefilterMap(GLuint map) { prefilterMap = map; }
+    void setBRDFLUTMap(GLuint map) { brdflutMap = map; }
+
+private:
+    const PBRProgram& program;
+    GLuint albedoMap;
+    GLuint normalMap;
+    GLuint metallicMap;
+    GLuint roughnessMap;
+    GLuint irradianceMap;
+    GLuint prefilterMap;
+    GLuint brdflutMap;
+};
+
 class Camera
 {
 public:
@@ -160,7 +257,7 @@ void loadModel(const char* path, GLuint* buffer, GLuint* index, int* nIndices)
     *nIndices = (int)indices.size();
 }
 
-void loadTexture(const char* path, GLuint* texture)
+GLuint loadTexture(const char* path)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);
@@ -170,8 +267,9 @@ void loadTexture(const char* path, GLuint* texture)
         throw std::runtime_error(path);
     }
 
-    glGenTextures(1, texture);
-    glBindTexture(GL_TEXTURE_2D, *texture);
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -179,18 +277,24 @@ void loadTexture(const char* path, GLuint* texture)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     stbi_image_free(pixels);
+
+    return texture;
 }
 
-void makeTexture(unsigned char r, unsigned char g, unsigned char b, unsigned char a, GLuint* texture)
+GLuint makeTexture(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
+    GLuint texture;
     unsigned char data[] = { r, g, b, a };
-    glGenTextures(1, texture);
-    glBindTexture(GL_TEXTURE_2D, *texture);
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    return texture;
 }
 
 void linkProgram(GLuint* program, GLuint vs, GLuint fs)
@@ -473,9 +577,7 @@ void renderSphere()
 }
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    if (severity > GL_DEBUG_SEVERITY_LOW_ARB)
-        return;
-    printf("Message : %s\n", message);
+    printf("DebugOutputCallback: %s", message);
 }
 
 int main()
@@ -509,72 +611,46 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);
 
+    Shaders::compile();
+
     GLuint vbo;
     GLuint ibo;
     int count;
-    GLuint albedoMap;
-    GLuint normalMap;
-    GLuint metallicMap;
-    GLuint roughnessMap;
-    GLuint program;
     GLuint skyboxprog;
     GLuint cubeMap;
     GLuint irradianceMap;
     GLuint prefilterMap;
     GLuint brdflutMap;
 
-    try {
-        Shaders::compile();
+    loadModel("models/MAC10.obj", &vbo, &ibo, &count);
+    linkProgram(&skyboxprog, Shaders::skyboxVertexShader(), Shaders::skyboxFragmentShader());
+    bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
+    loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
 
-        loadModel("models/MAC10.obj", &vbo, &ibo, &count);
-        loadTexture("models/MAC10_albedo.png", &albedoMap);
-        loadTexture("models/MAC10_normal.png", &normalMap);
-        /*
-        makeTexture(255, 255, 255, 255, &metallicMap);
-        makeTexture(0, 0, 0, 255, &roughnessMap);
-        */
-        /*
-        loadTexture("models/rustediron2_basecolor.png", &albedoMap);
-        loadTexture("models/rustediron2_normal.png", &normalMap);
-        loadTexture("models/rustediron2_metallic.png", &metallicMap);
-        loadTexture("models/rustediron2_roughness.png", &roughnessMap);
-        makeTexture(255, 255, 255, 255, &albedoMap);
-        makeTexture(128, 128, 255, 255, &normalMap);
-        */
-        makeTexture(255, 255, 255, 255, &metallicMap);
-        makeTexture(0, 0, 0, 255, &roughnessMap);
-        /*
-        compileShaders(&program, pbr_vert, pbr_frag);
-        compileShaders(&skyboxprog, skybox_vert, skybox_frag);
-        */
-        linkProgram(&program, Shaders::pbrVertexShader(), Shaders::pbrFragmentShader());
-        linkProgram(&skyboxprog, Shaders::skyboxVertexShader(), Shaders::skyboxFragmentShader());
-        bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
-        loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
-    } catch(std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return -1;
-    }
+    PBRMaterial material;
+    material.setAlbedoMap(loadTexture("models/MAC10_albedo.png"));
+    material.setNormalMap(loadTexture("models/MAC10_normal.png"));
+    material.setMetallicMap(makeTexture(255, 255, 255, 255));
+    material.setRoughnessMap(makeTexture(0, 0, 0, 255));
+    material.setIrradianceMap(irradianceMap);
+    material.setPrefilterMap(prefilterMap);
+    material.setBRDFLUTMap(brdflutMap);
 
-    glBindAttribLocation(program, 0, "aPosition");
-    glBindAttribLocation(program, 1, "aNormal");
-    glBindAttribLocation(program, 2, "aTexCoords");
+    PBRMaterial chromium;
+    chromium.setAlbedoMap(makeTexture(255, 255, 255, 255));
+    chromium.setNormalMap(makeTexture(128, 128, 255, 255));
+    chromium.setMetallicMap(makeTexture(255, 255, 255, 255));
+    chromium.setRoughnessMap(makeTexture(0, 0, 0, 255));
+    chromium.setIrradianceMap(irradianceMap);
+    chromium.setPrefilterMap(prefilterMap);
+    chromium.setBRDFLUTMap(brdflutMap);
 
-    glUseProgram(program);
-    GLuint albedoMap_Location = glGetUniformLocation(program, "albedoMap");
-    GLuint normalMap_Location = glGetUniformLocation(program, "normalMap");
-    GLuint metallicMap_Location = glGetUniformLocation(program, "metallicMap");
-    GLuint roughnessMap_Location = glGetUniformLocation(program, "roughnessMap");
-    GLuint irradianceMap_Location = glGetUniformLocation(program, "irradianceMap");
-    GLuint prefilterMap_Location = glGetUniformLocation(program, "prefilterMap");
-    GLuint brdflutMap_Location = glGetUniformLocation(program, "brdflutMap");
-    glUniform1i(albedoMap_Location, 0);
-    glUniform1i(normalMap_Location, 1);
-    glUniform1i(metallicMap_Location, 2);
-    glUniform1i(roughnessMap_Location, 3);
-    glUniform1i(irradianceMap_Location, 4);
-    glUniform1i(prefilterMap_Location, 5);
-    glUniform1i(brdflutMap_Location, 6);
+    /*
+    loadTexture("models/rustediron2_basecolor.png", &albedoMap);
+    loadTexture("models/rustediron2_normal.png", &normalMap);
+    loadTexture("models/rustediron2_metallic.png", &metallicMap);
+    loadTexture("models/rustediron2_roughness.png", &roughnessMap);
+    */
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -616,37 +692,29 @@ int main()
         glUniform1i(skybox_Location, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-
         glDepthMask(GL_FALSE);
         glBindVertexArray(vao); // placeholder
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
 
-        glUseProgram(program);
-        int MVP_Location = glGetUniformLocation(program, "MVP");
-        int uModel_Location = glGetUniformLocation(program, "uModel");
-        int viewPos_Location = glGetUniformLocation(program, "viewPos");
+        material.use();
+        int MVP_Location = glGetUniformLocation(material.getProgram(), "MVP");
+        int uModel_Location = glGetUniformLocation(material.getProgram(), "uModel");
+        int viewPos_Location = glGetUniformLocation(material.getProgram(), "viewPos");
         glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera.position[0]);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, albedoMap);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normalMap);
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, metallicMap);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, roughnessMap);
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
-        glActiveTexture(GL_TEXTURE6);
-        glBindTexture(GL_TEXTURE_2D, brdflutMap);
-
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
-        //renderSphere();
+
+        chromium.use();
+        MVP_Location = glGetUniformLocation(chromium.getProgram(), "MVP");
+        uModel_Location = glGetUniformLocation(chromium.getProgram(), "uModel");
+        viewPos_Location = glGetUniformLocation(chromium.getProgram(), "viewPos");
+        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
+        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
+        glUniform3fv(viewPos_Location, 1, &camera.position[0]);
+        renderSphere();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
