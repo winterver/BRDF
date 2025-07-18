@@ -585,7 +585,9 @@ int main()
     glfwInit();
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_SAMPLES, 4);
+#ifndef _WIN32
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE); // float at center of screen for tiling WMs.
+#endif
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // must be set to false for GLFW_FLOATING to take effect
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
