@@ -7,7 +7,7 @@ namespace Shaders {
     namespace {
         constexpr const char* pbr_vert_source =
         R"( #version 330 core
-            
+
             in vec3 aPosition;
             in vec3 aNormal;
             in vec2 aTexCoords;
@@ -74,7 +74,7 @@ namespace Shaders {
                 float alpha = roughness * roughness;
                 float alpha2 = alpha * alpha;
                 float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
-                return (alpha2)/(PI * denom*denom); 
+                return (alpha2)/(PI * denom*denom);
             }
 
             float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
@@ -89,14 +89,14 @@ namespace Shaders {
             vec3 F_Schlick(float cosTheta, float metallic)
             {
                 vec3 F0 = mix(vec3(0.04), materialcolor(), metallic);
-                return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0); 
+                return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
             }
 
             vec3 F_SchlickRoughness(float cosTheta, float metallic, float roughness)
             {
                 vec3 F0 = mix(vec3(0.04), materialcolor(), metallic);
                 return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-            } 
+            }
 
             vec3 BRDF(vec3 L, vec3 V, vec3 N, float metallic, float roughness)
             {
@@ -113,7 +113,7 @@ namespace Shaders {
                 if (dotNL > 0.0)
                 {
                     float R = max(0.05, roughness);
-                    float D = D_GGX(dotNH, R); 
+                    float D = D_GGX(dotNH, R);
                     float G = G_SchlicksmithGGX(dotNL, dotNV, R);
                     vec3 F = F_Schlick(dotNV, metallic);
 
@@ -124,7 +124,7 @@ namespace Shaders {
 
                 return color;
             }
-           
+
             void main()
             {
                 vec3 N = computeTBN();
@@ -153,7 +153,7 @@ namespace Shaders {
                 vec3 diffuse    = irradiance * materialcolor();
 
                 const float MAX_REFLECTION_LOD = 4.0;
-                vec3 prefilter = textureLod(prefilterMap, reflect(-V, N), roughness * MAX_REFLECTION_LOD).rgb;    
+                vec3 prefilter = textureLod(prefilterMap, reflect(-V, N), roughness * MAX_REFLECTION_LOD).rgb;
                 vec2 brdf      = texture(brdflutMap, vec2(max(dot(N, V), 0.0), roughness)).rg;
                 vec3 specular  = prefilter * (kS * brdf.x + brdf.y);
 
@@ -161,7 +161,7 @@ namespace Shaders {
                 vec3 color = Lo + ambient;
 
                 color = color / (color + vec3(1.0));
-                color = pow(color, vec3(1.0/2.2)); 
+                color = pow(color, vec3(1.0/2.2));
                 FragColor = vec4(color, 1.0);
             }
         )";
@@ -170,7 +170,7 @@ namespace Shaders {
 
             out vec2 TexCoords;
 
-            void main() 
+            void main()
             {
                 float x = float((gl_VertexID & 1) << 2);
                 float y = float((gl_VertexID & 2) << 1);
@@ -249,12 +249,12 @@ namespace Shaders {
             {
                 vec3 scan = uvToXYZ(face, TexCoords*2.0-1.0);
                 vec3 N = normalize(scan);
-                vec3 irradiance = vec3(0.0);   
-                
+                vec3 irradiance = vec3(0.0);
+
                 vec3 up    = vec3(0.0, 1.0, 0.0);
                 vec3 right = normalize(cross(up, N));
                 up         = normalize(cross(N, right));
-                   
+
                 float sampleDelta = 0.025;
                 float nrSamples = 0.0;
 
@@ -263,7 +263,7 @@ namespace Shaders {
                     for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)
                     {
                         vec3 tangentSample = vec3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
-                        vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N; 
+                        vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N;
 
                         irradiance += texture(environmentMap, sampleVec).rgb * cos(theta) * sin(theta);
                         nrSamples++;
@@ -300,7 +300,7 @@ namespace Shaders {
                 return nom / denom;
             }
 
-            float RadicalInverse_VdC(uint bits) 
+            float RadicalInverse_VdC(uint bits)
             {
                  bits = (bits << 16u) | (bits >> 16u);
                  bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
@@ -309,7 +309,7 @@ namespace Shaders {
                  bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
                  return float(bits) * 2.3283064365386963e-10; // / 0x100000000
             }
-            
+
             vec2 Hammersley(uint i, uint N)
             {
                 return vec2(float(i)/float(N), RadicalInverse_VdC(i));
@@ -318,20 +318,20 @@ namespace Shaders {
             vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
             {
                 float a = roughness*roughness;
-                
+
                 float phi = 2.0 * PI * Xi.x;
                 float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
                 float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
-                
+
                 vec3 H;
                 H.x = cos(phi) * sinTheta;
                 H.y = sin(phi) * sinTheta;
                 H.z = cosTheta;
-                
+
                 vec3 up          = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
                 vec3 tangent   = normalize(cross(up, N));
                 vec3 bitangent = cross(N, tangent);
-                
+
                 vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
                 return normalize(sampleVec);
             }
@@ -350,16 +350,16 @@ namespace Shaders {
             }
 
             void main()
-            {		
+            {
                 vec3 scan = uvToXYZ(face, TexCoords*2.0-1.0);
-                vec3 N = normalize(scan);       
+                vec3 N = normalize(scan);
                 vec3 R = N;
                 vec3 V = R;
 
                 const uint SAMPLE_COUNT = 1024u;
                 vec3 prefilteredColor = vec3(0.0);
                 float totalWeight = 0.0;
-                
+
                 for(uint i = 0u; i < SAMPLE_COUNT; ++i)
                 {
                     // generates a sample vector that's biased towards the preferred alignment direction (importance sampling).
@@ -374,14 +374,14 @@ namespace Shaders {
                         float D   = DistributionGGX(N, H, roughness);
                         float NdotH = max(dot(N, H), 0.0);
                         float HdotV = max(dot(H, V), 0.0);
-                        float pdf = D * NdotH / (4.0 * HdotV) + 0.0001; 
+                        float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
 
                         float resolution = 512.0; // resolution of source cubemap (per face)
                         float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
                         float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
-                        float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
-                        
+                        float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
+
                         prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL;
                         totalWeight      += NdotL;
                     }
@@ -434,7 +434,7 @@ namespace Shaders {
             uniform samplerCube skybox;
 
             void main()
-            {    
+            {
                 vec3 color = texture(skybox, TexCoords).rgb;
                 color = color / (color + vec3(1.0));
                 color = pow(color, vec3(1.0/2.2));
@@ -491,5 +491,5 @@ namespace Shaders {
         bakehdr_irradiance_convolution_frag = compileShader(GL_FRAGMENT_SHADER, bakehdr_irradiance_convolution_frag_source);
         bakehdr_prefilter_frag              = compileShader(GL_FRAGMENT_SHADER, bakehdr_prefilter_frag_source);
         skybox_frag                         = compileShader(GL_FRAGMENT_SHADER, skybox_frag_source);
-    } 
+    }
 }

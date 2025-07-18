@@ -137,8 +137,8 @@ void loadModel(const char* path, GLuint* buffer, GLuint* index, int* nIndices)
             };
 
             glm::ivec3 vtx = {
-                index.vertex_index, 
-                index.normal_index, 
+                index.vertex_index,
+                index.normal_index,
                 index.texcoord_index,
             };
             if (uniqueVertices.count(vtx) == 0) {
@@ -225,7 +225,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     GLuint hdr;
     glGenTextures(1, &hdr);
     glBindTexture(GL_TEXTURE_2D, hdr);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixels); 
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -301,7 +301,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     for (int i = 0; i < 6; i++) {
         glViewport(0, 0, 512, 512);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *cubeMap, 0); 
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *cubeMap, 0);
         glUseProgram(program);
         int face_Location = glGetUniformLocation(program, "face");
         glUniform1i(face_Location, i);
@@ -311,11 +311,11 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     }
     glBindTexture(GL_TEXTURE_CUBE_MAP, *cubeMap);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-    
+
     for (int i = 0; i < 6; i++) {
         glViewport(0, 0, 32, 32);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *irradianceMap, 0); 
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, *irradianceMap, 0);
         glUseProgram(convolution);
         int face_Location = glGetUniformLocation(convolution, "face");
         glUniform1i(face_Location, i);
@@ -346,7 +346,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
     }
-    
+
     glViewport(view[0], view[1], view[2], view[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
