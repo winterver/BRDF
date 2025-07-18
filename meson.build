@@ -5,6 +5,7 @@ executable('brdf',
   'lib/glad.c',
   'lib/header_impl.cpp',
   dependencies: [
-    dependency('glfw3')
+    dependency('glfw3'),
+    dependency('glm'),
   ]
 )
