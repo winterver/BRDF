@@ -193,36 +193,14 @@ void makeTexture(unsigned char r, unsigned char g, unsigned char b, unsigned cha
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
-void compileShaders(GLuint* program, const char* vertex, const char* fragment)
+void linkProgram(GLuint* program, GLuint vs, GLuint fs)
 {
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vs, 1, &vertex, NULL);
-    glShaderSource(fs, 1, &fragment, NULL);
-    glCompileShader(vs);
-    glCompileShader(fs);
-
-    int length;
-
-    glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &length);
-    if (length > 0) {
-        std::vector<char> message(length+1);
-        glGetShaderInfoLog(vs, length, NULL, message.data());
-        throw std::runtime_error(std::string(message.data()));
-    }
-
-    glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &length);
-    if (length > 0) {
-        std::vector<char> message(length+1);
-        glGetShaderInfoLog(fs, length, NULL, message.data());
-        throw std::runtime_error(std::string(message.data()));
-    }
-
     *program = glCreateProgram();
     glAttachShader(*program, vs);
     glAttachShader(*program, fs);
     glLinkProgram(*program);
 
+    int length;
     glGetProgramiv(*program, GL_INFO_LOG_LENGTH, &length);
     if (length > 0) {
         std::vector<char> message(length+1);
@@ -232,8 +210,6 @@ void compileShaders(GLuint* program, const char* vertex, const char* fragment)
 
     glDetachShader(*program, fs);
     glDetachShader(*program, vs);
-    glDeleteShader(fs);
-    glDeleteShader(vs);
 }
 
 void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* prefilterMap)
@@ -304,9 +280,14 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     static GLuint vao;
 
     if (program == 0) {
+        /*
         compileShaders(&program, bakehdr_vert, bakehdr_frag);
         compileShaders(&convolution, bakehdr_vert, bakehdr_irradiance_convolution_frag);
         compileShaders(&prefilter, bakehdr_vert, bakehdr_prefilter_frag);
+        */
+        linkProgram(&program, Shaders::bakehdrVertexShader(), Shaders::bakehdrFragmentShader());
+        linkProgram(&convolution, Shaders::bakehdrVertexShader(), Shaders::bakehdrIrradianceConvolutionFragmentShader());
+        linkProgram(&prefilter, Shaders::bakehdrVertexShader(), Shaders::bakehdrPrefilterFragmentShader());
         glGenVertexArrays(1, &vao);
     }
 
@@ -344,7 +325,7 @@ void bakeHDR(const char* path, GLuint* cubeMap, GLuint* irradianceMap, GLuint* p
     }
 
     unsigned int maxMipLevels = 5;
-    for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
+    for (unsigned int mip = 0; mip < maxMipLevels; mip++)
     {
         int mipWidth  = (int)(128 * std::pow(0.5, mip));
         int mipHeight = (int)(128 * std::pow(0.5, mip));
@@ -543,6 +524,8 @@ int main()
     GLuint brdflutMap;
 
     try {
+        Shaders::compile();
+
         loadModel("models/MAC10.obj", &vbo, &ibo, &count);
         loadTexture("models/MAC10_albedo.png", &albedoMap);
         loadTexture("models/MAC10_normal.png", &normalMap);
@@ -560,8 +543,12 @@ int main()
         */
         makeTexture(255, 255, 255, 255, &metallicMap);
         makeTexture(0, 0, 0, 255, &roughnessMap);
+        /*
         compileShaders(&program, pbr_vert, pbr_frag);
         compileShaders(&skyboxprog, skybox_vert, skybox_frag);
+        */
+        linkProgram(&program, Shaders::pbrVertexShader(), Shaders::pbrFragmentShader());
+        linkProgram(&skyboxprog, Shaders::skyboxVertexShader(), Shaders::skyboxFragmentShader());
         bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
         loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
     } catch(std::exception& e) {
