@@ -3,16 +3,17 @@
 #include <thread>
 #include <fstream>
 
-#include "glad.h"
-#include "stb_image.h"
-#include "tiny_obj_loader.hpp"
-#include "embeded_shaders.h"
+#include "../lib/glad.h"
+#include "../lib/stb_image.h"
+#include "../lib/tiny_obj_loader.hpp"
 
 #include <GLFW/glfw3.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/hash.hpp>
+
+#include "shaders.h"
 
 struct Vertex
 {
@@ -491,6 +492,8 @@ void renderSphere()
 }
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    if (severity > GL_DEBUG_SEVERITY_LOW_ARB)
+        return;
     printf("Message : %s\n", message);
 }
 
@@ -499,6 +502,8 @@ int main()
     glfwInit();
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_FLOATING, GLFW_TRUE); // float at center of screen for tiling WMs.
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // must be set to false for GLFW_FLOATING to take effect
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
