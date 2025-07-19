@@ -4,6 +4,7 @@ brdf_c_args = []
 brdf_cpp_args = []
 brdf_link_args = []
 brdf_deps = []
+brdf_subsystem = 'console'
 
 if meson.get_compiler('c').get_id() == 'gcc'
   if get_option('buildtype') == 'release'
@@ -19,6 +20,9 @@ endif
 if host_machine.system() == 'windows'
   brdf_deps += dependency('glfw3', static: true)
   brdf_deps += dependency('glm', static: true)
+  if get_option('buildtype') == 'release'
+    brdf_subsystem = 'windows'
+  endif
 else
   brdf_deps += dependency('glfw3')
   brdf_deps += dependency('glm')
@@ -27,10 +31,10 @@ endif
 executable('brdf',
   'src/main.cpp',
   'lib/glad.c',
-  'lib/header_impl.cpp',
+  'lib/impl.cpp',
   c_args: brdf_c_args,
   cpp_args: brdf_cpp_args,
   link_args: brdf_link_args,
   dependencies: brdf_deps,
-  win_subsystem: 'windows',
+  win_subsystem: brdf_subsystem,
 )

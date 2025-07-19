@@ -577,7 +577,14 @@ void renderSphere()
 }
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    /* parameter 'message', on windows, does not end in '\n',
+     * but on linux, it does. */
+#ifndef _WIN32
     printf("DebugOutputCallback: %s", message);
+#else
+    if (severity < 0x826b)
+        printf("DebugOutputCallback: %s\n", message);
+#endif
 }
 
 int main()
