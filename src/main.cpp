@@ -480,55 +480,73 @@ public:
     }
 };
 
-class SkyboxRenderPass : public RenderPass {
+class SkyboxMaterial {
 public:
-    SkyboxRenderPass(const char* hdr, const char* lut) {
-        glGenVertexArrays(1, &vao);
-        linkProgram(&skyboxprog,
-            Shaders::skyboxVertexShader(),
-            Shaders::skyboxFragmentShader());
-        bakeHDR(hdr, &cubeMap, &irradianceMap, &prefilterMap);
-        loadBRDFLUT(lut, &brdflutMap);
-        uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
-        uView_Location = glGetUniformLocation(skyboxprog, "uView");
-        skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
+    SkyboxMaterial()
+        : cubeMap(0)
+        , irradianceMap(0)
+        , prefilterMap(0)
+        , brdflutMap(0)
+    { }
+
+    void bake(const char* hdr, const char* lut) {
+        RenderPass::bakeHDR(hdr, &cubeMap, &irradianceMap, &prefilterMap);
+        RenderPass::loadBRDFLUT(lut, &brdflutMap);
     }
 
-    void setCamera(Camera* camera) {
-        this->camera = camera;
-    }
-
-    void drawSkybox() {
-        glUseProgram(skyboxprog);
-        glUniformMatrix4fv(uProj_Location, 1, GL_FALSE, &camera->projection[0][0]);
-        glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &camera->view[0][0]);
-        glUniform1i(skybox_Location, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-        glDepthMask(GL_FALSE);
-        glBindVertexArray(vao); // placeholder
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glDepthMask(GL_TRUE);
-    }
-
+    GLuint getCubeMap() { return cubeMap; }
     GLuint getIrradianceMap() { return irradianceMap; }
     GLuint getPrefilterMap() { return prefilterMap; }
     GLuint getBRDFLUTMap() { return brdflutMap; }
 
 private:
-    Camera* camera;
-    GLuint vao;
-    GLuint skyboxprog;
     GLuint cubeMap;
     GLuint irradianceMap;
     GLuint prefilterMap;
     GLuint brdflutMap;
-    GLuint uProj_Location;
-    GLuint uView_Location;
-    GLuint skybox_Location;
 };
 
-class PBRRenderPass;
+class SkyboxRenderPass : public RenderPass {
+public:
+    SkyboxRenderPass() {
+        if (vao == 0) {
+            glGenVertexArrays(1, &vao);
+            linkProgram(&skyboxprog,
+                Shaders::skyboxVertexShader(),
+                Shaders::skyboxFragmentShader());
+            uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
+            uView_Location = glGetUniformLocation(skyboxprog, "uView");
+            skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
+        }
+    }
+
+    void drawSkybox(Camera* camera, SkyboxMaterial* material) {
+        glUseProgram(skyboxprog);
+        glUniformMatrix4fv(uProj_Location, 1, GL_FALSE, &camera->projection[0][0]);
+        glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &camera->view[0][0]);
+        glUniform1i(skybox_Location, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, material->getCubeMap());
+        glDepthMask(GL_FALSE);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+    }
+
+private:
+    static GLuint vao;
+    static GLuint skyboxprog;
+    static GLuint uProj_Location;
+    static GLuint uView_Location;
+    static GLuint skybox_Location;
+};
+
+GLuint SkyboxRenderPass::vao;
+GLuint SkyboxRenderPass::skyboxprog;
+GLuint SkyboxRenderPass::uProj_Location;
+GLuint SkyboxRenderPass::uView_Location;
+GLuint SkyboxRenderPass::skybox_Location;
+
 class PBRMaterial
 {
 public:
@@ -549,8 +567,13 @@ public:
     void setIrradianceMap(GLuint map) { irradianceMap = map; }
     void setPrefilterMap(GLuint map) { prefilterMap = map; }
     void setBRDFLUTMap(GLuint map) { brdflutMap = map; }
-
-    friend class PBRRenderPass;
+    GLuint getAlbedoMap() { return albedoMap; }
+    GLuint getNormalMap() { return normalMap; }
+    GLuint getMetallicMap() { return metallicMap; }
+    GLuint getRoughnessMap() { return roughnessMap; }
+    GLuint getIrradianceMap() { return irradianceMap; }
+    GLuint getPrefilterMap() { return prefilterMap; }
+    GLuint getBRDFLUTMap() { return brdflutMap; }
 
 private:
     GLuint albedoMap;
@@ -565,78 +588,80 @@ private:
 class PBRRenderPass : public RenderPass {
 public:
     PBRRenderPass() {
-        linkProgram(&program,
-            Shaders::pbrVertexShader(),
-            Shaders::pbrFragmentShader());
+        if (program == 0) {
+            linkProgram(&program,
+                Shaders::pbrVertexShader(),
+                Shaders::pbrFragmentShader());
 
-        glBindAttribLocation(program, 0, "aPosition");
-        glBindAttribLocation(program, 1, "aNormal");
-        glBindAttribLocation(program, 2, "aTexCoords");
+            glBindAttribLocation(program, 0, "aPosition");
+            glBindAttribLocation(program, 1, "aNormal");
+            glBindAttribLocation(program, 2, "aTexCoords");
 
-        glUseProgram(program);
-        glUniform1i(glGetUniformLocation(program, "albedoMap"), 0);
-        glUniform1i(glGetUniformLocation(program, "normalMap"), 1);
-        glUniform1i(glGetUniformLocation(program, "metallicMap"), 2);
-        glUniform1i(glGetUniformLocation(program, "roughnessMap"), 3);
-        glUniform1i(glGetUniformLocation(program, "irradianceMap"), 4);
-        glUniform1i(glGetUniformLocation(program, "prefilterMap"), 5);
-        glUniform1i(glGetUniformLocation(program, "brdflutMap"), 6);
-        MVP_Location = glGetUniformLocation(program, "MVP");
-        uModel_Location = glGetUniformLocation(program, "uModel");
-        viewPos_Location = glGetUniformLocation(program, "viewPos");
+            glUseProgram(program);
+            glUniform1i(glGetUniformLocation(program, "albedoMap"), 0);
+            glUniform1i(glGetUniformLocation(program, "normalMap"), 1);
+            glUniform1i(glGetUniformLocation(program, "metallicMap"), 2);
+            glUniform1i(glGetUniformLocation(program, "roughnessMap"), 3);
+            glUniform1i(glGetUniformLocation(program, "irradianceMap"), 4);
+            glUniform1i(glGetUniformLocation(program, "prefilterMap"), 5);
+            glUniform1i(glGetUniformLocation(program, "brdflutMap"), 6);
+            MVP_Location = glGetUniformLocation(program, "MVP");
+            uModel_Location = glGetUniformLocation(program, "uModel");
+            viewPos_Location = glGetUniformLocation(program, "viewPos");
+        }
     }
 
-    void setCamera(Camera* camera) {
-        this->camera = camera;
-    }
-
-    void drawVAO(int vao, int count, const glm::mat4& model, const PBRMaterial& material) {
+    void drawVAO(Camera* camera, int vao, int count, const glm::mat4& model, PBRMaterial* material) {
         glUseProgram(program);
+        setupMatrix(camera, model);
         useMaterial(material);
-        setupMatrix(model);
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
     }
 
-    void drawSphere(const glm::mat4& model, const PBRMaterial& material) {
+    void drawSphere(Camera* camera, const glm::mat4& model, PBRMaterial* material) {
         glUseProgram(program);
+        setupMatrix(camera, model);
         useMaterial(material);
-        setupMatrix(model);
         renderSphere();
     }
 
 private:
-    void useMaterial(const PBRMaterial& material) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, material.albedoMap);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, material.normalMap);
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, material.metallicMap);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, material.roughnessMap);
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, material.irradianceMap);
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, material.prefilterMap);
-        glActiveTexture(GL_TEXTURE6);
-        glBindTexture(GL_TEXTURE_2D, material.brdflutMap);
-    }
-
-    void setupMatrix(const glm::mat4& model) { 
+    void setupMatrix(Camera* camera, const glm::mat4& model) { 
         glm::mat4 MVP = camera->projection * camera->view * model;
         glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &model[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera->position[0]);
     }
 
+    void useMaterial(PBRMaterial* material) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, material->getAlbedoMap());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, material->getNormalMap());
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, material->getMetallicMap());
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, material->getRoughnessMap());
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, material->getIrradianceMap());
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, material->getPrefilterMap());
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, material->getBRDFLUTMap());
+    }
+
 private:
-    Camera* camera;
-    GLuint program;
-    GLuint MVP_Location;
-    GLuint uModel_Location;
-    GLuint viewPos_Location;
+    static GLuint program;
+    static GLuint MVP_Location;
+    static GLuint uModel_Location;
+    static GLuint viewPos_Location;
 };
+
+GLuint PBRRenderPass::program;
+GLuint PBRRenderPass::MVP_Location;
+GLuint PBRRenderPass::uModel_Location;
+GLuint PBRRenderPass::viewPos_Location;
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     /* parameter 'message', on windows, does not end in '\n',
@@ -684,35 +709,38 @@ int main()
 
     Shaders::compile();
 
-    SkyboxRenderPass skybox("models/dawn.hdr", "models/BRDF_LUT.dds");
+    SkyboxRenderPass skybox;
     PBRRenderPass pbr;
+
+    SkyboxMaterial skyboxMaterial;
+    skyboxMaterial.bake("models/dawn.hdr", "models/BRDF_LUT.dds");
 
     PBRMaterial material;
     material.setAlbedoMap(RenderPass::loadTexture("models/MAC10_albedo.png"));
     material.setNormalMap(RenderPass::loadTexture("models/MAC10_normal.png"));
     material.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     material.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    material.setIrradianceMap(skybox.getIrradianceMap());
-    material.setPrefilterMap(skybox.getPrefilterMap());
-    material.setBRDFLUTMap(skybox.getBRDFLUTMap());
+    material.setIrradianceMap(skyboxMaterial.getIrradianceMap());
+    material.setPrefilterMap(skyboxMaterial.getPrefilterMap());
+    material.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     PBRMaterial chromium;
     chromium.setAlbedoMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setNormalMap(RenderPass::makeTexture(128, 128, 255, 255));
     chromium.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    chromium.setIrradianceMap(skybox.getIrradianceMap());
-    chromium.setPrefilterMap(skybox.getPrefilterMap());
-    chromium.setBRDFLUTMap(skybox.getBRDFLUTMap());
+    chromium.setIrradianceMap(skyboxMaterial.getIrradianceMap());
+    chromium.setPrefilterMap(skyboxMaterial.getPrefilterMap());
+    chromium.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     PBRMaterial rustediron2; 
     rustediron2.setAlbedoMap(RenderPass::loadTexture("models/rustediron2_basecolor.png"));
     rustediron2.setNormalMap(RenderPass::loadTexture("models/rustediron2_normal.png"));
     rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
     rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
-    rustediron2.setIrradianceMap(skybox.getIrradianceMap());
-    rustediron2.setPrefilterMap(skybox.getPrefilterMap());
-    rustediron2.setBRDFLUTMap(skybox.getBRDFLUTMap());
+    rustediron2.setIrradianceMap(skyboxMaterial.getIrradianceMap());
+    rustediron2.setPrefilterMap(skyboxMaterial.getPrefilterMap());
+    rustediron2.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     GLuint vbo;
     GLuint ibo;
@@ -748,13 +776,11 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        skybox.setCamera(&camera);
-        skybox.drawSkybox();
+        skybox.drawSkybox(&camera, &skyboxMaterial);
 
-        pbr.setCamera(&camera);
-        pbr.drawVAO(vao, count, glm::mat4(1.0), material);
-        pbr.drawSphere(glm::translate(glm::vec3(1.5, 0, 0)), chromium);
-        pbr.drawSphere(glm::translate(glm::vec3(-1.5, 0, 0)), rustediron2);
+        pbr.drawVAO(&camera, vao, count, glm::mat4(1.0), &material);
+        pbr.drawSphere(&camera, glm::translate(glm::vec3(1.5, 0, 0)), &chromium);
+        pbr.drawSphere(&camera, glm::translate(glm::vec3(-1.5, 0, 0)), &rustediron2);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
