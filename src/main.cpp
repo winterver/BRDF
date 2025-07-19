@@ -69,27 +69,18 @@ int main()
     material.setNormalMap(RenderPass::loadTexture("models/MAC10_normal.png"));
     material.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     material.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    material.setIrradianceMap(skyboxMaterial.getIrradianceMap());
-    material.setPrefilterMap(skyboxMaterial.getPrefilterMap());
-    material.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     PBRMaterial chromium;
     chromium.setAlbedoMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setNormalMap(RenderPass::makeTexture(128, 128, 255, 255));
     chromium.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    chromium.setIrradianceMap(skyboxMaterial.getIrradianceMap());
-    chromium.setPrefilterMap(skyboxMaterial.getPrefilterMap());
-    chromium.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     PBRMaterial rustediron2; 
     rustediron2.setAlbedoMap(RenderPass::loadTexture("models/rustediron2_basecolor.png"));
     rustediron2.setNormalMap(RenderPass::loadTexture("models/rustediron2_normal.png"));
     rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
     rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
-    rustediron2.setIrradianceMap(skyboxMaterial.getIrradianceMap());
-    rustediron2.setPrefilterMap(skyboxMaterial.getPrefilterMap());
-    rustediron2.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
     Mesh mac10;
     mac10.loadObj("models/MAC10.obj");
@@ -113,9 +104,9 @@ int main()
 
         skybox.drawSkybox(&camera, &skyboxMaterial);
 
-        pbr.drawMesh(&camera, &mac10, glm::mat4(1.0), &material);
-        pbr.drawSphere(&camera, glm::translate(glm::vec3(1.5, 0, 0)), &chromium);
-        pbr.drawSphere(&camera, glm::translate(glm::vec3(-1.5, 0, 0)), &rustediron2);
+        pbr.drawMesh(&camera, &mac10, glm::mat4(1.0), &material, &skyboxMaterial);
+        pbr.drawSphere(&camera, glm::translate(glm::vec3(2, 0, 0)), &chromium, &skyboxMaterial);
+        pbr.drawSphere(&camera, glm::translate(glm::vec3(-2, 0, 0)), &rustediron2, &skyboxMaterial);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

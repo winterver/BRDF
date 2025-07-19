@@ -1,6 +1,7 @@
 #include "pbr.h"
 #include "camera.h"
 #include "mesh.h"
+#include "skybox.h"
 #include "shaders.h"
 
 GLuint PBRRenderPass::program;
@@ -32,26 +33,26 @@ PBRRenderPass::PBRRenderPass() {
     }
 }
 
-void PBRRenderPass::drawVAO(Camera* camera, int vao, int count, const glm::mat4& model, PBRMaterial* material) {
+void PBRRenderPass::drawVAO(Camera* camera, int vao, int count, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
     glUseProgram(program);
     setupMatrix(camera, model);
-    useMaterial(material);
+    useMaterial(material, skybox);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
 }
 
-void PBRRenderPass::drawMesh(Camera* camera, Mesh* mesh, const glm::mat4& model, PBRMaterial* material) {
+void PBRRenderPass::drawMesh(Camera* camera, Mesh* mesh, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
     glUseProgram(program);
     setupMatrix(camera, model);
-    useMaterial(material);
+    useMaterial(material, skybox);
     glBindVertexArray(mesh->getVAO());
     glDrawElements(GL_TRIANGLES, mesh->getCount(), GL_UNSIGNED_INT, 0);
 }
 
-void PBRRenderPass::drawSphere(Camera* camera, const glm::mat4& model, PBRMaterial* material) {
+void PBRRenderPass::drawSphere(Camera* camera, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
     glUseProgram(program);
     setupMatrix(camera, model);
-    useMaterial(material);
+    useMaterial(material, skybox);
     renderSphere();
 }
 
@@ -62,7 +63,7 @@ void PBRRenderPass::setupMatrix(Camera* camera, const glm::mat4& model) {
     glUniform3fv(viewPos_Location, 1, &camera->position[0]);
 }
 
-void PBRRenderPass::useMaterial(PBRMaterial* material) {
+void PBRRenderPass::useMaterial(PBRMaterial* material, SkyboxMaterial* skybox) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->getAlbedoMap());
     glActiveTexture(GL_TEXTURE1);
@@ -72,9 +73,9 @@ void PBRRenderPass::useMaterial(PBRMaterial* material) {
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, material->getRoughnessMap());
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, material->getIrradianceMap());
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox->getIrradianceMap());
     glActiveTexture(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, material->getPrefilterMap());
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox->getPrefilterMap());
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_2D, material->getBRDFLUTMap());
+    glBindTexture(GL_TEXTURE_2D, skybox->getBRDFLUTMap());
 }
