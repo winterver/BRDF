@@ -1,7 +1,7 @@
 #pragma once
-#include "../lib/glad.h"
-#include "renderpass.h"
+#include <glad.h>
 #include <glm/glm.hpp>
+#include "renderpass.h"
 
 class SkyboxMaterial {
 public:

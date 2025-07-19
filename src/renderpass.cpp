@@ -1,7 +1,7 @@
 #include "renderpass.h"
 #include "shaders.h"
 
-#include "../lib/stb_image.h"
+#include <stb_image.h>
 #include <glm/glm.hpp>
 
 #include <vector>

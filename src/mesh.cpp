@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <glm/gtx/hash.hpp>
-#include "../lib/tiny_obj_loader.hpp"
+#include <tiny_obj_loader.hpp>
 
 Mesh::Mesh() {
     glGenVertexArrays(1, &vao);
