@@ -23,5 +23,3 @@ private:
     GLuint ibo;
     int count;
 };
-
-

@@ -33,8 +33,10 @@ endif
 
 executable('brdf',
   'src/main.cpp',
-  'src/camera.cpp',
+  'src/skybox.cpp',
+  'src/pbr.cpp',
   'src/mesh.cpp',
+  'src/camera.cpp',
   'src/renderpass.cpp',
   'src/shaders.cpp',
   'lib/glad.c',
