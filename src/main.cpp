@@ -22,6 +22,89 @@ struct Vertex
     glm::vec2 texcoords;
 };
 
+class Camera
+{
+public:
+    float fov = 60.0f;
+    float vertical = 0.0f;
+    float horizontal = glm::pi<float>();
+    float speed = 3.0f;
+    float mouseSpeed = 0.002f;
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
+    glm::mat4 projection;
+    glm::mat4 view;
+
+    GLFWwindow* window;
+    double lastX = 0, lastY = 0;
+
+    Camera(GLFWwindow* window) : window(window) {
+        glfwGetCursorPos(window, &lastX, &lastY);
+    }
+
+    void update(float deltaTime)
+    {
+        double currentX, currentY;
+        glfwGetCursorPos(window, &currentX, &currentY);
+        double dx = currentX - lastX;
+        double dy = currentY - lastY;
+        lastX = currentX;
+        lastY = currentY;
+
+        horizontal -= float(mouseSpeed * dx);
+        vertical   -= float(mouseSpeed * dy);
+        horizontal = glm::mod(horizontal, glm::two_pi<float>());
+        vertical = glm::clamp(vertical, -1.57f, 1.57f);
+
+        glm::vec3 direction(
+            cos(vertical) * sin(horizontal),
+            sin(vertical),
+            cos(vertical) * cos(horizontal)
+        );
+
+        glm::vec3 forward(
+            sin(horizontal),
+            0,
+            cos(horizontal)
+        );
+
+        glm::vec3 right(
+            sin(horizontal - glm::half_pi<float>()),
+            0,
+            cos(horizontal - glm::half_pi<float>())
+        );
+
+        glm::vec3 up = glm::vec3(0, 1, 0);
+
+        glm::vec3 velocity{};
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+            velocity += forward;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+            velocity -= forward;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+            velocity += right;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+            velocity -= right;
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+            velocity += up;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+            velocity -= up;
+        }
+        if (glm::length(velocity) > 0) {
+            position += glm::normalize(velocity) * speed * deltaTime;
+        }
+
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
+        view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
+    }
+};
+
 class RenderPass {
 public:
     static void linkProgram(GLuint* program, GLuint vs, GLuint fs)
@@ -397,89 +480,52 @@ public:
     }
 };
 
-class Camera
-{
+class SkyboxRenderPass : public RenderPass {
 public:
-    float fov = 60.0f;
-    float vertical = 0.0f;
-    float horizontal = glm::pi<float>();
-    float speed = 3.0f;
-    float mouseSpeed = 0.002f;
-    glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
-    glm::mat4 projection;
-    glm::mat4 view;
-
-    GLFWwindow* window;
-    double lastX = 0, lastY = 0;
-
-    Camera(GLFWwindow* window) : window(window) {
-        glfwGetCursorPos(window, &lastX, &lastY);
+    SkyboxRenderPass(const char* hdr, const char* lut) {
+        glGenVertexArrays(1, &vao);
+        linkProgram(&skyboxprog,
+            Shaders::skyboxVertexShader(),
+            Shaders::skyboxFragmentShader());
+        bakeHDR(hdr, &cubeMap, &irradianceMap, &prefilterMap);
+        loadBRDFLUT(lut, &brdflutMap);
+        uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
+        uView_Location = glGetUniformLocation(skyboxprog, "uView");
+        skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
     }
 
-    void update(float deltaTime, glm::mat4& projection, glm::mat4& view)
-    {
-        double currentX, currentY;
-        glfwGetCursorPos(window, &currentX, &currentY);
-        double dx = currentX - lastX;
-        double dy = currentY - lastY;
-        lastX = currentX;
-        lastY = currentY;
-
-        horizontal -= float(mouseSpeed * dx);
-        vertical   -= float(mouseSpeed * dy);
-        horizontal = glm::mod(horizontal, glm::two_pi<float>());
-        vertical = glm::clamp(vertical, -1.57f, 1.57f);
-
-        glm::vec3 direction(
-            cos(vertical) * sin(horizontal),
-            sin(vertical),
-            cos(vertical) * cos(horizontal)
-        );
-
-        glm::vec3 forward(
-            sin(horizontal),
-            0,
-            cos(horizontal)
-        );
-
-        glm::vec3 right(
-            sin(horizontal - glm::half_pi<float>()),
-            0,
-            cos(horizontal - glm::half_pi<float>())
-        );
-
-        glm::vec3 up = glm::vec3(0, 1, 0);
-
-        glm::vec3 velocity{};
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-            velocity += forward;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-            velocity -= forward;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-            velocity += right;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-            velocity -= right;
-        }
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
-            velocity += up;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-            velocity -= up;
-        }
-        if (glm::length(velocity) > 0) {
-            position += glm::normalize(velocity) * speed * deltaTime;
-        }
-
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
-        view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
-        this->projection = projection;
-        this->view = view;
+    void setCamera(Camera* camera) {
+        this->camera = camera;
     }
+
+    void drawSkybox() {
+        glUseProgram(skyboxprog);
+        glUniformMatrix4fv(uProj_Location, 1, GL_FALSE, &camera->projection[0][0]);
+        glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &camera->view[0][0]);
+        glUniform1i(skybox_Location, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+        glDepthMask(GL_FALSE);
+        glBindVertexArray(vao); // placeholder
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+    }
+
+    GLuint getIrradianceMap() { return irradianceMap; }
+    GLuint getPrefilterMap() { return prefilterMap; }
+    GLuint getBRDFLUTMap() { return brdflutMap; }
+
+private:
+    Camera* camera;
+    GLuint vao;
+    GLuint skyboxprog;
+    GLuint cubeMap;
+    GLuint irradianceMap;
+    GLuint prefilterMap;
+    GLuint brdflutMap;
+    GLuint uProj_Location;
+    GLuint uView_Location;
+    GLuint skybox_Location;
 };
 
 class PBRRenderPass;
@@ -545,6 +591,7 @@ public:
     }
 
     void drawVAO(int vao, int count, const glm::mat4& model, const PBRMaterial& material) {
+        glUseProgram(program);
         useMaterial(material);
         setupMatrix(model);
         glBindVertexArray(vao);
@@ -552,6 +599,7 @@ public:
     }
 
     void drawSphere(const glm::mat4& model, const PBRMaterial& material) {
+        glUseProgram(program);
         useMaterial(material);
         setupMatrix(model);
         renderSphere();
@@ -576,7 +624,6 @@ private:
     }
 
     void setupMatrix(const glm::mat4& model) { 
-        glUseProgram(program);
         glm::mat4 MVP = camera->projection * camera->view * model;
         glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &model[0][0]);
@@ -640,34 +687,38 @@ int main()
     GLuint vbo;
     GLuint ibo;
     int count;
+
+    RenderPass::loadModel("models/MAC10.obj", &vbo, &ibo, &count);
+    /*
     GLuint skyboxprog;
     GLuint cubeMap;
     GLuint irradianceMap;
     GLuint prefilterMap;
     GLuint brdflutMap;
 
-    RenderPass::loadModel("models/MAC10.obj", &vbo, &ibo, &count);
     RenderPass::linkProgram(&skyboxprog, Shaders::skyboxVertexShader(), Shaders::skyboxFragmentShader());
     RenderPass::bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
     RenderPass::loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
+    */
+    SkyboxRenderPass skybox("models/dawn.hdr", "models/BRDF_LUT.dds");
 
     PBRMaterial material;
     material.setAlbedoMap(RenderPass::loadTexture("models/MAC10_albedo.png"));
     material.setNormalMap(RenderPass::loadTexture("models/MAC10_normal.png"));
     material.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     material.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    material.setIrradianceMap(irradianceMap);
-    material.setPrefilterMap(prefilterMap);
-    material.setBRDFLUTMap(brdflutMap);
+    material.setIrradianceMap(skybox.getIrradianceMap());
+    material.setPrefilterMap(skybox.getPrefilterMap());
+    material.setBRDFLUTMap(skybox.getBRDFLUTMap());
 
     PBRMaterial chromium;
     chromium.setAlbedoMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setNormalMap(RenderPass::makeTexture(128, 128, 255, 255));
     chromium.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setRoughnessMap(RenderPass::makeTexture(0, 0, 0, 255));
-    chromium.setIrradianceMap(irradianceMap);
-    chromium.setPrefilterMap(prefilterMap);
-    chromium.setBRDFLUTMap(brdflutMap);
+    chromium.setIrradianceMap(skybox.getIrradianceMap());
+    chromium.setPrefilterMap(skybox.getPrefilterMap());
+    chromium.setBRDFLUTMap(skybox.getBRDFLUTMap());
 
     PBRRenderPass pbr;
 
@@ -703,12 +754,16 @@ int main()
         }
         lastTime = glfwGetTime();
 
+        /*
         glm::mat4 uProj, uView, uModel = glm::mat4(1.0f);
         camera.update(deltaTime, uProj, uView);
         glm::mat4 MVP = uProj * uView * uModel;
+        */
+        camera.update(deltaTime);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        /*
         glUseProgram(skyboxprog);
         int uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
         int uView_Location = glGetUniformLocation(skyboxprog, "uView");
@@ -722,30 +777,13 @@ int main()
         glBindVertexArray(vao); // placeholder
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
+        */
+        skybox.setCamera(&camera);
+        skybox.drawSkybox();
 
         pbr.setCamera(&camera);
-        pbr.drawVAO(vao, count, uModel, material);
-        pbr.drawSphere(uModel, chromium);
-        /*
-        material.use();
-        int MVP_Location = glGetUniformLocation(material.getProgram(), "MVP");
-        int uModel_Location = glGetUniformLocation(material.getProgram(), "uModel");
-        int viewPos_Location = glGetUniformLocation(material.getProgram(), "viewPos");
-        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
-        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
-        glUniform3fv(viewPos_Location, 1, &camera.position[0]);
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
-
-        chromium.use();
-        MVP_Location = glGetUniformLocation(chromium.getProgram(), "MVP");
-        uModel_Location = glGetUniformLocation(chromium.getProgram(), "uModel");
-        viewPos_Location = glGetUniformLocation(chromium.getProgram(), "viewPos");
-        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
-        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
-        glUniform3fv(viewPos_Location, 1, &camera.position[0]);
-        RenderPass::renderSphere();
-        */
+        pbr.drawVAO(vao, count, glm::mat4(1.0), material);
+        pbr.drawSphere(glm::mat4(1.0), chromium);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
