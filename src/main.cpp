@@ -397,10 +397,10 @@ public:
     }
 };
 
-class PBRProgram
+class _PBRProgram
 {
 public:
-    PBRProgram() {
+    _PBRProgram() {
         RenderPass::linkProgram(&program, Shaders::pbrVertexShader(), Shaders::pbrFragmentShader());
 
         glBindAttribLocation(program, 0, "aPosition");
@@ -427,11 +427,11 @@ public:
     void use() const { glUseProgram(program); }
     GLuint getProgram() const { return program; }
 
-    PBRProgram(const PBRProgram&) = delete;
-    void operator=(const PBRProgram&) = delete;
+    _PBRProgram(const _PBRProgram&) = delete;
+    void operator=(const _PBRProgram&) = delete;
 
-    static const PBRProgram& getInstance() {
-        static PBRProgram instance;
+    static const _PBRProgram& getInstance() {
+        static _PBRProgram instance;
         return instance;
     }
 
@@ -439,11 +439,11 @@ private:
     GLuint program;
 };
 
-class PBRMaterial
+class _PBRMaterial
 {
 public:
-    PBRMaterial()
-        : program(PBRProgram::getInstance())
+    _PBRMaterial()
+        : program(_PBRProgram::getInstance())
         , albedoMap(0)
         , normalMap(0)
         , metallicMap(0)
@@ -482,7 +482,7 @@ public:
     void setBRDFLUTMap(GLuint map) { brdflutMap = map; }
 
 private:
-    const PBRProgram& program;
+    const _PBRProgram& program;
     GLuint albedoMap;
     GLuint normalMap;
     GLuint metallicMap;
@@ -501,6 +501,8 @@ public:
     float speed = 3.0f;
     float mouseSpeed = 0.002f;
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
+    glm::mat4 projection;
+    glm::mat4 view;
 
     GLFWwindow* window;
     double lastX = 0, lastY = 0;
@@ -570,11 +572,110 @@ public:
         glfwGetFramebufferSize(window, &width, &height);
         projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
         view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
+        this->projection = projection;
+        this->view = view;
     }
 };
 
-class PBRRenderPass {
+class PBRRenderPass;
+class PBRMaterial
+{
+public:
+    PBRMaterial()
+        : albedoMap(0)
+        , normalMap(0)
+        , metallicMap(0)
+        , roughnessMap(0)
+        , irradianceMap(0)
+        , prefilterMap(0)
+        , brdflutMap(0)
+    { }
+
+    void setAlbedoMap(GLuint map) { albedoMap = map; }
+    void setNormalMap(GLuint map) { normalMap = map; }
+    void setMetallicMap(GLuint map) { metallicMap = map; }
+    void setRoughnessMap(GLuint map) { roughnessMap = map; }
+    void setIrradianceMap(GLuint map) { irradianceMap = map; }
+    void setPrefilterMap(GLuint map) { prefilterMap = map; }
+    void setBRDFLUTMap(GLuint map) { brdflutMap = map; }
+
+    friend class PBRRenderPass;
+
 private:
+    GLuint albedoMap;
+    GLuint normalMap;
+    GLuint metallicMap;
+    GLuint roughnessMap;
+    GLuint irradianceMap;
+    GLuint prefilterMap;
+    GLuint brdflutMap;
+};
+
+class PBRRenderPass : public RenderPass {
+    PBRRenderPass() {
+        linkProgram(&program,
+            Shaders::pbrVertexShader(),
+            Shaders::pbrFragmentShader());
+
+        glBindAttribLocation(program, 0, "aPosition");
+        glBindAttribLocation(program, 1, "aNormal");
+        glBindAttribLocation(program, 2, "aTexCoords");
+
+        glUseProgram(program);
+        glUniform1i(glGetUniformLocation(program, "albedoMap"), 0);
+        glUniform1i(glGetUniformLocation(program, "normalMap"), 1);
+        glUniform1i(glGetUniformLocation(program, "metallicMap"), 2);
+        glUniform1i(glGetUniformLocation(program, "roughnessMap"), 3);
+        glUniform1i(glGetUniformLocation(program, "irradianceMap"), 4);
+        glUniform1i(glGetUniformLocation(program, "prefilterMap"), 5);
+        glUniform1i(glGetUniformLocation(program, "brdflutMap"), 6);
+        MVP_Location = glGetUniformLocation(program, "MVP");
+        uModel_Location = glGetUniformLocation(program, "uModel");
+        viewPos_Location = glGetUniformLocation(program, "viewPos");
+    }
+
+    void setCamera(Camera* camera) {
+        this->camera = camera;
+    }
+
+    void drawSphere(const glm::mat4& model, const PBRMaterial& material) {
+        useMaterial(material);
+        setupMatrix(model);
+        renderSphere();
+    }
+
+private:
+    void useMaterial(const PBRMaterial& material) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, material.albedoMap);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, material.normalMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, material.metallicMap);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, material.roughnessMap);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, material.irradianceMap);
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, material.prefilterMap);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, material.brdflutMap);
+    }
+
+    void setupMatrix(const glm::mat4& model) { 
+        glUseProgram(program);
+        glm::mat4 MVP = camera->projection * camera->view * model;
+        glUniformMatrix4fv(MVP_Location, 1, GL_FALSE, &MVP[0][0]);
+        glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &model[0][0]);
+        glUniform3fv(viewPos_Location, 1, &camera->position[0]);
+    }
+
+private:
+    Camera* camera;
+    GLuint program;
+    GLuint MVP_Location;
+    GLuint uModel_Location;
+    GLuint viewPos_Location;
 };
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -637,7 +738,7 @@ int main()
     RenderPass::bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
     RenderPass::loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
 
-    PBRMaterial material;
+    _PBRMaterial material;
     material.setAlbedoMap(RenderPass::loadTexture("models/MAC10_albedo.png"));
     material.setNormalMap(RenderPass::loadTexture("models/MAC10_normal.png"));
     material.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
@@ -646,7 +747,7 @@ int main()
     material.setPrefilterMap(prefilterMap);
     material.setBRDFLUTMap(brdflutMap);
 
-    PBRMaterial chromium;
+    _PBRMaterial chromium;
     chromium.setAlbedoMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setNormalMap(RenderPass::makeTexture(128, 128, 255, 255));
     chromium.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
