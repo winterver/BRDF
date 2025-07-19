@@ -5,189 +5,15 @@
 
 #include "../lib/glad.h"
 #include "../lib/stb_image.h"
-#include "../lib/tiny_obj_loader.hpp"
+#include "camera.h"
+#include "mesh.h"
 
 #include <GLFW/glfw3.h>
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/hash.hpp>
 
 #include "shaders.h"
-
-class Mesh {
-public:
-    struct Vertex {
-        glm::vec3 position;
-        glm::vec3 normal;
-        glm::vec2 texcoords;
-    };
-
-public:
-    Mesh() {
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ibo);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texcoords));
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-    }
-
-    void loadObj(const char* path)
-    {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::string warn, err;
-
-        if (!tinyobj::LoadObj(&attrib, &shapes, nullptr, &warn, &err, path)) {
-            throw std::runtime_error(warn + err);
-        }
-
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-
-        std::unordered_map<glm::ivec3, uint32_t> uniqueVertices{};
-        for (const auto& shape : shapes) {
-            for (const auto& index : shape.mesh.indices) {
-                Vertex vertex{};
-
-                vertex.position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2],
-                };
-                vertex.normal = {
-                    attrib.normals[3 * index.normal_index + 0],
-                    attrib.normals[3 * index.normal_index + 1],
-                    attrib.normals[3 * index.normal_index + 2],
-                };
-                vertex.texcoords = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    attrib.texcoords[2 * index.texcoord_index + 1],
-                };
-
-                glm::ivec3 vtx = {
-                    index.vertex_index,
-                    index.normal_index,
-                    index.texcoord_index,
-                };
-                if (uniqueVertices.count(vtx) == 0) {
-                    uniqueVertices[vtx] = (uint32_t)vertices.size();
-                    vertices.push_back(vertex);
-                }
-
-                indices.push_back(uniqueVertices[vtx]);
-            }
-        }
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-
-        count = (int)indices.size();
-    }
-
-    GLuint getVAO() { return vao; }
-    GLuint getCount() { return count; }
-
-private:
-    GLuint vao;
-    GLuint vbo;
-    GLuint ibo;
-    int count;
-};
-
-class Camera
-{
-public:
-    float fov = 60.0f;
-    float vertical = 0.0f;
-    float horizontal = glm::pi<float>();
-    float speed = 3.0f;
-    float mouseSpeed = 0.002f;
-    glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
-    glm::mat4 projection;
-    glm::mat4 view;
-
-    GLFWwindow* window;
-    double lastX = 0, lastY = 0;
-
-    Camera(GLFWwindow* window) : window(window) {
-        glfwGetCursorPos(window, &lastX, &lastY);
-    }
-
-    void update(float deltaTime)
-    {
-        double currentX, currentY;
-        glfwGetCursorPos(window, &currentX, &currentY);
-        double dx = currentX - lastX;
-        double dy = currentY - lastY;
-        lastX = currentX;
-        lastY = currentY;
-
-        horizontal -= float(mouseSpeed * dx);
-        vertical   -= float(mouseSpeed * dy);
-        horizontal = glm::mod(horizontal, glm::two_pi<float>());
-        vertical = glm::clamp(vertical, -1.57f, 1.57f);
-
-        glm::vec3 direction(
-            cos(vertical) * sin(horizontal),
-            sin(vertical),
-            cos(vertical) * cos(horizontal)
-        );
-
-        glm::vec3 forward(
-            sin(horizontal),
-            0,
-            cos(horizontal)
-        );
-
-        glm::vec3 right(
-            sin(horizontal - glm::half_pi<float>()),
-            0,
-            cos(horizontal - glm::half_pi<float>())
-        );
-
-        glm::vec3 up = glm::vec3(0, 1, 0);
-
-        glm::vec3 velocity{};
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-            velocity += forward;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-            velocity -= forward;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-            velocity += right;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-            velocity -= right;
-        }
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
-            velocity += up;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-            velocity -= up;
-        }
-        if (glm::length(velocity) > 0) {
-            position += glm::normalize(velocity) * speed * deltaTime;
-        }
-
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        projection = glm::perspective(glm::radians(fov), (float)width/height, 0.1f, 1000.0f);
-        view       = glm::lookAt(position, position + direction, glm::vec3(0, 1, 0));
-    }
-};
 
 class RenderPass {
 public:
@@ -777,24 +603,6 @@ int main()
     rustediron2.setPrefilterMap(skyboxMaterial.getPrefilterMap());
     rustediron2.setBRDFLUTMap(skyboxMaterial.getBRDFLUTMap());
 
-    /*
-    GLuint vbo;
-    GLuint ibo;
-    int count;
-    RenderPass::loadModel("models/MAC10.obj", &vbo, &ibo, &count);
-
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texcoords));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    */
     Mesh mac10;
     mac10.loadObj("models/MAC10.obj");
 
