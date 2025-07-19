@@ -397,101 +397,6 @@ public:
     }
 };
 
-class _PBRProgram
-{
-public:
-    _PBRProgram() {
-        RenderPass::linkProgram(&program, Shaders::pbrVertexShader(), Shaders::pbrFragmentShader());
-
-        glBindAttribLocation(program, 0, "aPosition");
-        glBindAttribLocation(program, 1, "aNormal");
-        glBindAttribLocation(program, 2, "aTexCoords");
-
-        glUseProgram(program);
-        GLuint albedoMap_Location = glGetUniformLocation(program, "albedoMap");
-        GLuint normalMap_Location = glGetUniformLocation(program, "normalMap");
-        GLuint metallicMap_Location = glGetUniformLocation(program, "metallicMap");
-        GLuint roughnessMap_Location = glGetUniformLocation(program, "roughnessMap");
-        GLuint irradianceMap_Location = glGetUniformLocation(program, "irradianceMap");
-        GLuint prefilterMap_Location = glGetUniformLocation(program, "prefilterMap");
-        GLuint brdflutMap_Location = glGetUniformLocation(program, "brdflutMap");
-        glUniform1i(albedoMap_Location, 0);
-        glUniform1i(normalMap_Location, 1);
-        glUniform1i(metallicMap_Location, 2);
-        glUniform1i(roughnessMap_Location, 3);
-        glUniform1i(irradianceMap_Location, 4);
-        glUniform1i(prefilterMap_Location, 5);
-        glUniform1i(brdflutMap_Location, 6);
-    }
-
-    void use() const { glUseProgram(program); }
-    GLuint getProgram() const { return program; }
-
-    _PBRProgram(const _PBRProgram&) = delete;
-    void operator=(const _PBRProgram&) = delete;
-
-    static const _PBRProgram& getInstance() {
-        static _PBRProgram instance;
-        return instance;
-    }
-
-private:
-    GLuint program;
-};
-
-class _PBRMaterial
-{
-public:
-    _PBRMaterial()
-        : program(_PBRProgram::getInstance())
-        , albedoMap(0)
-        , normalMap(0)
-        , metallicMap(0)
-        , roughnessMap(0)
-        , irradianceMap(0)
-        , prefilterMap(0)
-        , brdflutMap(0)
-    { }
-
-    void use() const {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, albedoMap);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normalMap);
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, metallicMap);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, roughnessMap);
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
-        glActiveTexture(GL_TEXTURE6);
-        glBindTexture(GL_TEXTURE_2D, brdflutMap);
-        program.use();
-    }
-
-    GLuint getProgram() const { return program.getProgram(); }
-
-    void setAlbedoMap(GLuint map) { albedoMap = map; }
-    void setNormalMap(GLuint map) { normalMap = map; }
-    void setMetallicMap(GLuint map) { metallicMap = map; }
-    void setRoughnessMap(GLuint map) { roughnessMap = map; }
-    void setIrradianceMap(GLuint map) { irradianceMap = map; }
-    void setPrefilterMap(GLuint map) { prefilterMap = map; }
-    void setBRDFLUTMap(GLuint map) { brdflutMap = map; }
-
-private:
-    const _PBRProgram& program;
-    GLuint albedoMap;
-    GLuint normalMap;
-    GLuint metallicMap;
-    GLuint roughnessMap;
-    GLuint irradianceMap;
-    GLuint prefilterMap;
-    GLuint brdflutMap;
-};
-
 class Camera
 {
 public:
@@ -612,6 +517,7 @@ private:
 };
 
 class PBRRenderPass : public RenderPass {
+public:
     PBRRenderPass() {
         linkProgram(&program,
             Shaders::pbrVertexShader(),
@@ -636,6 +542,13 @@ class PBRRenderPass : public RenderPass {
 
     void setCamera(Camera* camera) {
         this->camera = camera;
+    }
+
+    void drawVAO(int vao, int count, const glm::mat4& model, const PBRMaterial& material) {
+        useMaterial(material);
+        setupMatrix(model);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
     }
 
     void drawSphere(const glm::mat4& model, const PBRMaterial& material) {
@@ -738,7 +651,7 @@ int main()
     RenderPass::bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
     RenderPass::loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
 
-    _PBRMaterial material;
+    PBRMaterial material;
     material.setAlbedoMap(RenderPass::loadTexture("models/MAC10_albedo.png"));
     material.setNormalMap(RenderPass::loadTexture("models/MAC10_normal.png"));
     material.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
@@ -747,7 +660,7 @@ int main()
     material.setPrefilterMap(prefilterMap);
     material.setBRDFLUTMap(brdflutMap);
 
-    _PBRMaterial chromium;
+    PBRMaterial chromium;
     chromium.setAlbedoMap(RenderPass::makeTexture(255, 255, 255, 255));
     chromium.setNormalMap(RenderPass::makeTexture(128, 128, 255, 255));
     chromium.setMetallicMap(RenderPass::makeTexture(255, 255, 255, 255));
@@ -755,6 +668,8 @@ int main()
     chromium.setIrradianceMap(irradianceMap);
     chromium.setPrefilterMap(prefilterMap);
     chromium.setBRDFLUTMap(brdflutMap);
+
+    PBRRenderPass pbr;
 
     /*
     loadTexture("models/rustediron2_basecolor.png", &albedoMap);
@@ -808,6 +723,10 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
 
+        pbr.setCamera(&camera);
+        pbr.drawVAO(vao, count, uModel, material);
+        pbr.drawSphere(uModel, chromium);
+        /*
         material.use();
         int MVP_Location = glGetUniformLocation(material.getProgram(), "MVP");
         int uModel_Location = glGetUniformLocation(material.getProgram(), "uModel");
@@ -826,6 +745,7 @@ int main()
         glUniformMatrix4fv(uModel_Location, 1, GL_FALSE, &uModel[0][0]);
         glUniform3fv(viewPos_Location, 1, &camera.position[0]);
         RenderPass::renderSphere();
+        */
 
         glfwSwapBuffers(window);
         glfwPollEvents();
