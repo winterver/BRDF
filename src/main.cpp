@@ -644,7 +644,7 @@ void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum 
 #ifndef _WIN32
     printf("DebugOutputCallback: %s", message);
 #else
-    if (severity < 0x826b)
+    if (severity != 0x826b) // ignore notification
         printf("DebugOutputCallback: %s\n", message);
 #endif
 }
@@ -684,23 +684,8 @@ int main()
 
     Shaders::compile();
 
-    GLuint vbo;
-    GLuint ibo;
-    int count;
-
-    RenderPass::loadModel("models/MAC10.obj", &vbo, &ibo, &count);
-    /*
-    GLuint skyboxprog;
-    GLuint cubeMap;
-    GLuint irradianceMap;
-    GLuint prefilterMap;
-    GLuint brdflutMap;
-
-    RenderPass::linkProgram(&skyboxprog, Shaders::skyboxVertexShader(), Shaders::skyboxFragmentShader());
-    RenderPass::bakeHDR("models/dawn.hdr", &cubeMap, &irradianceMap, &prefilterMap);
-    RenderPass::loadBRDFLUT("models/BRDF_LUT.dds", &brdflutMap);
-    */
     SkyboxRenderPass skybox("models/dawn.hdr", "models/BRDF_LUT.dds");
+    PBRRenderPass pbr;
 
     PBRMaterial material;
     material.setAlbedoMap(RenderPass::loadTexture("models/MAC10_albedo.png"));
@@ -720,14 +705,19 @@ int main()
     chromium.setPrefilterMap(skybox.getPrefilterMap());
     chromium.setBRDFLUTMap(skybox.getBRDFLUTMap());
 
-    PBRRenderPass pbr;
+    PBRMaterial rustediron2; 
+    rustediron2.setAlbedoMap(RenderPass::loadTexture("models/rustediron2_basecolor.png"));
+    rustediron2.setNormalMap(RenderPass::loadTexture("models/rustediron2_normal.png"));
+    rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
+    rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
+    rustediron2.setIrradianceMap(skybox.getIrradianceMap());
+    rustediron2.setPrefilterMap(skybox.getPrefilterMap());
+    rustediron2.setBRDFLUTMap(skybox.getBRDFLUTMap());
 
-    /*
-    loadTexture("models/rustediron2_basecolor.png", &albedoMap);
-    loadTexture("models/rustediron2_normal.png", &normalMap);
-    loadTexture("models/rustediron2_metallic.png", &metallicMap);
-    loadTexture("models/rustediron2_roughness.png", &roughnessMap);
-    */
+    GLuint vbo;
+    GLuint ibo;
+    int count;
+    RenderPass::loadModel("models/MAC10.obj", &vbo, &ibo, &count);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -754,36 +744,17 @@ int main()
         }
         lastTime = glfwGetTime();
 
-        /*
-        glm::mat4 uProj, uView, uModel = glm::mat4(1.0f);
-        camera.update(deltaTime, uProj, uView);
-        glm::mat4 MVP = uProj * uView * uModel;
-        */
         camera.update(deltaTime);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        /*
-        glUseProgram(skyboxprog);
-        int uProj_Location = glGetUniformLocation(skyboxprog, "uProj");
-        int uView_Location = glGetUniformLocation(skyboxprog, "uView");
-        int skybox_Location = glGetUniformLocation(skyboxprog, "skybox");
-        glUniformMatrix4fv(uProj_Location, 1, GL_FALSE, &uProj[0][0]);
-        glUniformMatrix4fv(uView_Location, 1, GL_FALSE, &uView[0][0]);
-        glUniform1i(skybox_Location, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-        glDepthMask(GL_FALSE);
-        glBindVertexArray(vao); // placeholder
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glDepthMask(GL_TRUE);
-        */
         skybox.setCamera(&camera);
         skybox.drawSkybox();
 
         pbr.setCamera(&camera);
         pbr.drawVAO(vao, count, glm::mat4(1.0), material);
-        pbr.drawSphere(glm::mat4(1.0), chromium);
+        pbr.drawSphere(glm::translate(glm::vec3(1.5, 0, 0)), chromium);
+        pbr.drawSphere(glm::translate(glm::vec3(-1.5, 0, 0)), rustediron2);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
