@@ -26,9 +26,11 @@ if host_machine.system() == 'windows'
   endif
   brdf_deps += dependency('glfw3', static: true)
   brdf_deps += dependency('glm', static: true)
+  brdf_deps += dependency('freetype2', static: true)
 else
   brdf_deps += dependency('glfw3')
   brdf_deps += dependency('glm')
+  brdf_deps += dependency('freetype2')
 endif
 
 executable('brdf',
