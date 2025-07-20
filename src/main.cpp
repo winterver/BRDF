@@ -87,11 +87,9 @@ int main()
     rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
     rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
 
-    //glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {

@@ -103,8 +103,6 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
 }
 
 void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, const char* text) {
-    // TODO: enable blend
-    
     std::vector<glm::mat4> transforms;
     std::vector<int> layers;
     
@@ -145,11 +143,16 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
     glBindBuffer(GL_ARRAY_BUFFER, layerBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(int) * layers.size(), layers.data(), GL_STREAM_DRAW);
 
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
+
     glUseProgram(textprog);
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, material->textureArray);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, i - nodraw);
+
     glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 }
