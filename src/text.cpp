@@ -97,7 +97,7 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
     glEnableVertexAttribArray(transform_Location + 3);
 
     glBindBuffer(GL_ARRAY_BUFFER, layerBuffer);
-    glVertexAttribPointer(layer_Location, 1, GL_INT, GL_FALSE, sizeof(GLint), (void*)0);
+    glVertexAttribIPointer(layer_Location, 1, GL_INT, sizeof(GLint), (void*)0);
     glVertexAttribDivisor(layer_Location, 1);
     glEnableVertexAttribArray(layer_Location);
 }
@@ -139,8 +139,8 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
     glBindBuffer(GL_ARRAY_BUFFER, layerBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(int) * layers.size(), layers.data(), GL_STREAM_DRAW);
 
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
     glUseProgram(textprog);

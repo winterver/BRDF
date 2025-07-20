@@ -61,7 +61,7 @@ int main()
     TextRenderPass text(window);
 
     TextMaterial font;
-    font.loadFont("C:/Windows/Fonts/arial.ttf");
+    font.loadFont("models/CormorantGaramond-Light.ttf");
 
     Mesh mac10;
     mac10.loadObj("models/MAC10.obj");
