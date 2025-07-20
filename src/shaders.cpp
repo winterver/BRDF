@@ -455,37 +455,83 @@ R"( #version 330 core
         FragColor = vec4(color, 1);
     }
 )";
+constexpr const char* text_vert_source =
+R"( #version 330 core
+
+    in mat4 transform;
+    in int layer;
+    out vec3 UV;
+
+    uniform mat4 projection;
+
+    const vec2 vertices[] = vec2[](
+        vec2(0, 0),
+        vec2(1, 0),
+        vec2(1, 1),
+        vec2(1, 1),
+        vec2(0, 1),
+        vec2(0, 0)
+    );
+
+    void main()
+    {
+        gl_Position = projection * transform * vec4(vertices[gl_VertexID], 0, 1);
+        UV = vec3(vertices[gl_VertexID], layer);
+        UV.y = 1.0 - UV.y;
+    }
+)";
+constexpr const char* text_frag_source =
+R"( #version 330 core
+
+    out vec4 FragColor;
+    in vec3 UV;
+
+    uniform sampler2DArray text;
+
+    void main()
+    {
+        float sampled = texture(text, UV).r;
+        FragColor = vec4(1.0) * vec4(vec3(1.0), sampled);
+    }
+)";
+
 
 namespace Shaders {
     GLuint pbr_vert;
     GLuint bakehdr_vert;
     GLuint skybox_vert;
+    GLuint text_vert;
 
     GLuint pbr_frag;
     GLuint bakehdr_frag;
     GLuint bakehdr_irradiance_convolution_frag;
     GLuint bakehdr_prefilter_frag;
     GLuint skybox_frag;
+    GLuint text_frag;
 
     GLuint pbrVertexShader()                             { return pbr_vert; }
     GLuint bakehdrVertexShader()                         { return bakehdr_vert; }
     GLuint skyboxVertexShader()                          { return skybox_vert; }
+    GLuint textVertexShader()                            { return text_vert; }
 
     GLuint pbrFragmentShader()                           { return pbr_frag; }
     GLuint bakehdrFragmentShader()                       { return bakehdr_frag; }
     GLuint bakehdrIrradianceConvolutionFragmentShader()  { return bakehdr_irradiance_convolution_frag; }
     GLuint bakehdrPrefilterFragmentShader()              { return bakehdr_prefilter_frag; }
     GLuint skyboxFragmentShader()                        { return skybox_frag; }
+    GLuint textFragmentShader()                          { return text_frag; }
 
     void compile() {
         pbr_vert                            = compileShader(GL_VERTEX_SHADER, pbr_vert_source);
         bakehdr_vert                        = compileShader(GL_VERTEX_SHADER, bakehdr_vert_source);
         skybox_vert                         = compileShader(GL_VERTEX_SHADER, skybox_vert_source);
+        text_vert                           = compileShader(GL_VERTEX_SHADER, text_vert_source);
 
         pbr_frag                            = compileShader(GL_FRAGMENT_SHADER, pbr_frag_source);
         bakehdr_frag                        = compileShader(GL_FRAGMENT_SHADER, bakehdr_frag_source);
         bakehdr_irradiance_convolution_frag = compileShader(GL_FRAGMENT_SHADER, bakehdr_irradiance_convolution_frag_source);
         bakehdr_prefilter_frag              = compileShader(GL_FRAGMENT_SHADER, bakehdr_prefilter_frag_source);
         skybox_frag                         = compileShader(GL_FRAGMENT_SHADER, skybox_frag_source);
+        text_frag                           = compileShader(GL_FRAGMENT_SHADER, text_frag_source);
     }
 }

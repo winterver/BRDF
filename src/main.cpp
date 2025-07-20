@@ -6,11 +6,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include "shaders.h"
 #include "skybox.h"
 #include "pbr.h"
 #include "mesh.h"
 #include "camera.h"
-#include "shaders.h"
+#include "text.h"
 
 void APIENTRY DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     /* parameter 'message', on windows, does not end in '\n',
@@ -57,6 +58,10 @@ int main()
     SkyboxRenderPass skybox;
     PBRRenderPass pbr;
     Camera camera(window);
+    TextRenderPass text(window);
+
+    TextMaterial font;
+    font.loadFont("C:/Windows/Fonts/arial.ttf");
 
     Mesh mac10;
     mac10.loadObj("models/MAC10.obj");
@@ -82,9 +87,11 @@ int main()
     rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
     rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
 
+    //glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {
@@ -106,6 +113,8 @@ int main()
         pbr.drawMesh(&camera, &skyboxMaterial, &material, glm::mat4(1.0), &mac10);
         pbr.drawSphere(&camera, &skyboxMaterial, &chromium, glm::translate(glm::vec3(2, 0, 0)));
         pbr.drawSphere(&camera, &skyboxMaterial, &rustediron2, glm::translate(glm::vec3(-2, 0, 0)));
+
+        text.drawText(&font, glm::vec2(100, 100), "Hello Text!");
 
         glfwSwapBuffers(window);
         glfwPollEvents();

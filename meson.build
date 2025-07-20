@@ -26,6 +26,7 @@ if host_machine.system() == 'windows'
   endif
   brdf_deps += dependency('glfw3', static: true)
   brdf_deps += dependency('glm', static: true)
+  brdf_deps += dependency('libpng', static: true)
   brdf_deps += dependency('freetype2', static: true)
 else
   brdf_deps += dependency('glfw3')
@@ -39,6 +40,7 @@ executable('brdf',
   'src/pbr.cpp',
   'src/mesh.cpp',
   'src/camera.cpp',
+  'src/text.cpp',
   'src/renderpass.cpp',
   'src/shaders.cpp',
   'lib/glad.c',
