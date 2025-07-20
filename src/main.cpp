@@ -112,7 +112,19 @@ int main()
         pbr.drawSphere(&camera, &skyboxMaterial, &chromium, glm::translate(glm::vec3(2, 0, 0)));
         pbr.drawSphere(&camera, &skyboxMaterial, &rustediron2, glm::translate(glm::vec3(-2, 0, 0)));
 
+        static char buf[64];
+        static float accumulated = 1.0f;
+        accumulated += deltaTime;
+        if (accumulated >= 1.0f) {
+            accumulated = 0.0f;
+            sprintf(buf, "FPS: %.2f", 1.0f/deltaTime);
+        }
+        text.drawText(&font, glm::vec2(100, 836), buf);
         text.drawText(&font, glm::vec2(100, 100), "Hello Text!");
+        text.drawText(&font, glm::vec2(100, 500), "Gallia est omnis divisa in partes tres,");
+        text.drawText(&font, glm::vec2(100, 400), "Quarum unam incolunt Belgae, aliam Aquitani,");
+        text.drawText(&font, glm::vec2(100, 300), "Tertiam qui ipsorum linuga Celtae, nostra");
+        text.drawText(&font, glm::vec2(100, 200), "Galli appellantur.");
 
         glfwSwapBuffers(window);
         glfwPollEvents();

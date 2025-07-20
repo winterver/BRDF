@@ -1,3 +1,11 @@
+# TODO
+bug: Framerate is capped at 60.
+
+bug: TextRenderPass::drawText() can't properly handle '\n'.
+
+change: TextRenderPass::drawText()'s origin is left-bottom, and Y goes up.
+change it to left-top and make Y go down.
+
 # Compile
 
 ## Linux
