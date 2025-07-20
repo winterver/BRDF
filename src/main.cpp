@@ -29,7 +29,7 @@ int main()
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_SAMPLES, 4);
 #ifndef _WIN32
-    glfwWindowHint(GLFW_FLOATING, GLFW_TRUE); // float at center of screen for tiling WMs.
+    glfwWindowHint(GLFW_FLOATING, GLFW_TRUE); // float at the center of the screen in tiling WM environments.
 #endif
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // must be set to false for GLFW_FLOATING to take effect
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
@@ -52,14 +52,14 @@ int main()
     gladLoadGL();
     glDebugMessageCallbackARB(&DebugOutputCallback, NULL);
 
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_FRAMEBUFFER_SRGB);
-
     Shaders::compile();
 
     SkyboxRenderPass skybox;
     PBRRenderPass pbr;
+    Camera camera(window);
+
+    Mesh mac10;
+    mac10.loadObj("models/MAC10.obj");
 
     SkyboxMaterial skyboxMaterial;
     skyboxMaterial.bake("models/dawn.hdr", "models/BRDF_LUT.dds");
@@ -82,15 +82,14 @@ int main()
     rustediron2.setMetallicMap(RenderPass::loadTexture("models/rustediron2_metallic.png"));
     rustediron2.setRoughnessMap(RenderPass::loadTexture("models/rustediron2_roughness.png"));
 
-    Mesh mac10;
-    mac10.loadObj("models/MAC10.obj");
-
-    int framerate = 120;
-    double lastTime = 0;
-    Camera camera(window);
-
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
+
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && !glfwWindowShouldClose(window)) {
+        const int framerate = 120;
+        static double lastTime = 0;
         float deltaTime = float(glfwGetTime() - lastTime);
         while (glfwGetTime() < (lastTime + 1.0/framerate)) {
             deltaTime = 1.0f/framerate;
