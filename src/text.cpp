@@ -110,6 +110,7 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
     
     float x = pos.x;
     float y = pos.y;
+    int nodraw = 0;
     int i;
 
     for (i = 0; text[i]; i++) {
@@ -118,10 +119,12 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
         if (text[i] == '\n') {
             y -= metric.size.y * 1.2;
             x = pos.x;
+            nodraw++;
             continue;
         }
         else if (text[i] == ' ') {
             x += metric.advance;
+            nodraw++;
             continue;
         }
 
@@ -147,6 +150,6 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, material->textureArray);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, i);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, i - nodraw);
     glEnable(GL_DEPTH_TEST);
 }
