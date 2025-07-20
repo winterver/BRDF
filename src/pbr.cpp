@@ -4,6 +4,18 @@
 #include "skybox.h"
 #include "shaders.h"
 
+GLuint PBRMaterial::defaultAlbedoMap;
+GLuint PBRMaterial::defaultNormalMap;
+GLuint PBRMaterial::defaultMetallicMap;
+GLuint PBRMaterial::defaultRoughnessMap;
+
+PBRMaterial::PBRMaterial()
+    : albedoMap(defaultAlbedoMap ? defaultAlbedoMap : defaultAlbedoMap = RenderPass::makeTexture(255, 255, 255, 255))
+    , normalMap(defaultNormalMap ? defaultNormalMap : defaultNormalMap = RenderPass::makeTexture(128, 128, 255, 255))
+    , metallicMap(defaultMetallicMap ? defaultMetallicMap : defaultMetallicMap = RenderPass::makeTexture(0, 0, 0, 0))
+    , roughnessMap(defaultRoughnessMap ? defaultRoughnessMap : defaultRoughnessMap = RenderPass::makeTexture(0, 0, 0, 0))
+{ }
+
 GLuint PBRRenderPass::program;
 GLuint PBRRenderPass::MVP_Location;
 GLuint PBRRenderPass::uModel_Location;

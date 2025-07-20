@@ -6,12 +6,7 @@
 class PBRMaterial
 {
 public:
-    PBRMaterial()
-        : albedoMap(0)
-        , normalMap(0)
-        , metallicMap(0)
-        , roughnessMap(0)
-    { }
+    PBRMaterial();
 
     void setAlbedoMap(GLuint map) { albedoMap = map; }
     void setNormalMap(GLuint map) { normalMap = map; }
@@ -28,6 +23,10 @@ private:
     GLuint normalMap;
     GLuint metallicMap;
     GLuint roughnessMap;
+    static GLuint defaultAlbedoMap;
+    static GLuint defaultNormalMap;
+    static GLuint defaultMetallicMap;
+    static GLuint defaultRoughnessMap;
 };
 
 class Camera;
