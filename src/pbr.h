@@ -37,9 +37,9 @@ class SkyboxMaterial;
 class PBRRenderPass : public RenderPass {
 public:
     PBRRenderPass();
-    void drawVAO(Camera* camera, int vao, int count, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox);
-    void drawMesh(Camera* camera, Mesh* mesh, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox);
-    void drawSphere(Camera* camera, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox);
+    void drawVAO(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model, int vao, int count);
+    void drawMesh(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model, Mesh* mesh);
+    void drawSphere(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model);
 
 private:
     void setupMatrix(Camera* camera, const glm::mat4& model);

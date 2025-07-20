@@ -104,9 +104,9 @@ int main()
 
         skybox.drawSkybox(&camera, &skyboxMaterial);
 
-        pbr.drawMesh(&camera, &mac10, glm::mat4(1.0), &material, &skyboxMaterial);
-        pbr.drawSphere(&camera, glm::translate(glm::vec3(2, 0, 0)), &chromium, &skyboxMaterial);
-        pbr.drawSphere(&camera, glm::translate(glm::vec3(-2, 0, 0)), &rustediron2, &skyboxMaterial);
+        pbr.drawMesh(&camera, &skyboxMaterial, &material, glm::mat4(1.0), &mac10);
+        pbr.drawSphere(&camera, &skyboxMaterial, &chromium, glm::translate(glm::vec3(2, 0, 0)));
+        pbr.drawSphere(&camera, &skyboxMaterial, &rustediron2, glm::translate(glm::vec3(-2, 0, 0)));
 
         glfwSwapBuffers(window);
         glfwPollEvents();

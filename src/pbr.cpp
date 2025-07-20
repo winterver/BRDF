@@ -33,7 +33,7 @@ PBRRenderPass::PBRRenderPass() {
     }
 }
 
-void PBRRenderPass::drawVAO(Camera* camera, int vao, int count, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
+void PBRRenderPass::drawVAO(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model, int vao, int count) {
     glUseProgram(program);
     setupMatrix(camera, model);
     useMaterial(material, skybox);
@@ -41,7 +41,7 @@ void PBRRenderPass::drawVAO(Camera* camera, int vao, int count, const glm::mat4&
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
 }
 
-void PBRRenderPass::drawMesh(Camera* camera, Mesh* mesh, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
+void PBRRenderPass::drawMesh(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model, Mesh* mesh) {
     glUseProgram(program);
     setupMatrix(camera, model);
     useMaterial(material, skybox);
@@ -49,7 +49,7 @@ void PBRRenderPass::drawMesh(Camera* camera, Mesh* mesh, const glm::mat4& model,
     glDrawElements(GL_TRIANGLES, mesh->getCount(), GL_UNSIGNED_INT, 0);
 }
 
-void PBRRenderPass::drawSphere(Camera* camera, const glm::mat4& model, PBRMaterial* material, SkyboxMaterial* skybox) {
+void PBRRenderPass::drawSphere(Camera* camera, SkyboxMaterial* skybox, PBRMaterial* material, const glm::mat4& model) {
     glUseProgram(program);
     setupMatrix(camera, model);
     useMaterial(material, skybox);
