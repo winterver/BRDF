@@ -127,8 +127,13 @@ int main()
             sprintf(buf, "FPS: %.0f", 1.0f/deltaTime);
         }
         text.drawText(&cour, glm::vec2(0, 000), buf);
-        text.drawText(&cour, glm::vec2(0, 100), "Hello Text!");
-        text.drawText(&font, glm::vec2(0, 200),
+
+        char buf2[64];
+        sprintf(buf2, "dir: %f %f %f", camera.direction.x, camera.direction.y, camera.direction.z);
+        text.drawText(&cour, glm::vec2(0, 100), buf2);
+
+        text.drawText(&cour, glm::vec2(0, 200), "Hello Text!");
+        text.drawText(&font, glm::vec2(0, 300),
             "Gallia est omnis divisa in partes tres,\n"
             "Quarum unam incolunt Belgae, aliam Aquitani,\n"
             "Tertiam qui ipsorum linuga Celtae, nostra\n"

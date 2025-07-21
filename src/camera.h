@@ -12,6 +12,7 @@ public:
     float speed = 3.0f;
     float mouseSpeed = 0.002f;
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 5.0f);
+    glm::vec3 direction;
     glm::mat4 projection;
     glm::mat4 view;
 

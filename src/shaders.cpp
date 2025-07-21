@@ -146,6 +146,7 @@ R"( #version 330 core
         float metallic = texture(metallicMap, TexCoords).r;
         float roughness = texture(roughnessMap, TexCoords).r;
 
+        /*
         #define NUM_LIGHTS 4
         vec3 lightPos[] = vec3[](
             vec3(1.0f, 0.0f, 0.0f),
@@ -159,6 +160,9 @@ R"( #version 330 core
           vec3 L = normalize(lightPos[i] - WorldPos);
           Lo += BRDF(L, V, N, metallic, roughness);
         }
+        */
+        vec3 L = vec3(0.759773, 0.105802, 0.641523);
+        vec3 Lo = BRDF(L, V, N, metallic, roughness);
 
         vec3 kS = F_SchlickRoughness(max(dot(N, V), 0.0), metallic, roughness);
         vec3 kD = (1.0 - kS) * (1.0 - metallic);

@@ -19,7 +19,7 @@ void Camera::update(float deltaTime)
     horizontal = glm::mod(horizontal, glm::two_pi<float>());
     vertical = glm::clamp(vertical, -1.57f, 1.57f);
 
-    glm::vec3 direction(
+    direction = glm::vec3(
         cos(vertical) * sin(horizontal),
         sin(vertical),
         cos(vertical) * cos(horizontal)
