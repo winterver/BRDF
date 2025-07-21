@@ -491,6 +491,8 @@ R"( #version 330 core
     void main()
     {
         float sampled = texture(text, UV).r;
+        if (abs(sampled) < 0.00001f)
+            discard;
         FragColor = vec4(1.0) * vec4(vec3(1.0), sampled);
     }
 )";
