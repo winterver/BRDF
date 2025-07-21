@@ -1,8 +1,6 @@
 # TODO
 bug: Framerate is capped at 60.
 
-bug: TextRenderPass::drawText() can't properly handle '\n'.
-
 # Compile
 
 ## Linux

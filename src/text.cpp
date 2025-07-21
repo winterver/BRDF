@@ -32,15 +32,20 @@ void TextMaterial::loadFont(const char* path, int size) {
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // 0-31 & 127: control codes, no glyph
-    for (int c = 32; c < 127; c++) {
+    for (int c = 0; c < 128; c++) {
         if (FT_Load_Char(face, (char)c, FT_LOAD_RENDER)) {
             throw std::runtime_error("Failed to load glyph");
         }
 
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, c,
-            face->glyph->bitmap.width, face->glyph->bitmap.rows,
-            1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+        if (face->glyph->bitmap.width > 0
+            && face->glyph->bitmap.width <= 64
+            && face->glyph->bitmap.rows > 0
+            && face->glyph->bitmap.rows <= 64)
+        {
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, c,
+                face->glyph->bitmap.width, face->glyph->bitmap.rows,
+                1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+        }
 
         Metric metric = {
             glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
