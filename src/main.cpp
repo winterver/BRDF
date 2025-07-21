@@ -62,6 +62,9 @@ int main()
     Camera camera(window);
     TextRenderPass text(window);
 
+    TextMaterial cour;
+    cour.loadFont("models/Courier-New.ttf");
+
     TextMaterial font;
     font.loadFont("models/CormorantGaramond-Light.ttf");
 
@@ -121,8 +124,8 @@ int main()
             accumulated = 0.0f;
             sprintf(buf, "FPS: %.0f", 1.0f/deltaTime);
         }
-        text.drawText(&font, glm::vec2(0, 000), buf);
-        text.drawText(&font, glm::vec2(0, 100), "Hello Text!");
+        text.drawText(&cour, glm::vec2(0, 000), buf);
+        text.drawText(&cour, glm::vec2(0, 100), "Hello Text!");
         text.drawText(&font, glm::vec2(0, 200),
             "Gallia est omnis divisa in partes tres,\n"
             "Quarum unam incolunt Belgae, aliam Aquitani,\n"
