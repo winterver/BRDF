@@ -466,10 +466,10 @@ R"( #version 330 core
 
     const vec2 vertices[] = vec2[](
         vec2(0, 0),
+        vec2(0, -1),
+        vec2(1, -1),
+        vec2(1, -1),
         vec2(1, 0),
-        vec2(1, 1),
-        vec2(1, 1),
-        vec2(0, 1),
         vec2(0, 0)
     );
 
@@ -477,7 +477,7 @@ R"( #version 330 core
     {
         gl_Position = projection * transform * vec4(vertices[gl_VertexID], 0, 1);
         UV = vec3(vertices[gl_VertexID], layer);
-        UV.y = 1.0 - UV.y;
+        UV.y = -UV.y;
     }
 )";
 constexpr const char* text_frag_source =

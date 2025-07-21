@@ -119,12 +119,12 @@ int main()
             accumulated = 0.0f;
             sprintf(buf, "FPS: %.2f", 1.0f/deltaTime);
         }
-        text.drawText(&font, glm::vec2(100, 836), buf);
-        text.drawText(&font, glm::vec2(100, 100), "Hello Text!");
-        text.drawText(&font, glm::vec2(100, 500), "Gallia est omnis divisa in partes tres,");
-        text.drawText(&font, glm::vec2(100, 400), "Quarum unam incolunt Belgae, aliam Aquitani,");
-        text.drawText(&font, glm::vec2(100, 300), "Tertiam qui ipsorum linuga Celtae, nostra");
-        text.drawText(&font, glm::vec2(100, 200), "Galli appellantur.");
+        text.drawText(&font, glm::vec2(0, 000), buf);
+        text.drawText(&font, glm::vec2(0, 100), "Hello Text!");
+        text.drawText(&font, glm::vec2(0, 200), "Gallia est omnis divisa in partes tres,");
+        text.drawText(&font, glm::vec2(0, 300), "Quarum unam incolunt Belgae, aliam Aquitani,");
+        text.drawText(&font, glm::vec2(0, 400), "Tertiam qui ipsorum linuga Celtae, nostra");
+        text.drawText(&font, glm::vec2(0, 500), "Galli appellantur.");
 
         glfwSwapBuffers(window);
         glfwPollEvents();

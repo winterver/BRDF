@@ -66,7 +66,7 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glm::mat4 projection = glm::ortho(0.0f, (float)width, 0.0f, (float)height);
+    glm::mat4 projection = glm::ortho(0.0f, (float)width, -(float)height, 0.0f);
 
     glUseProgram(textprog);
     GLuint projection_Location = glGetUniformLocation(textprog, "projection");
@@ -113,7 +113,7 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
         const auto& metric = material->metrics[text[i]];
 
         if (text[i] == '\n') {
-            y -= metric.size.y * 1.2;
+            y += metric.size.y * 1.2;
             x = pos.x;
             continue;
         }
@@ -123,9 +123,9 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
         }
 
         float x2 = x + metric.bearing.x;
-        float y2 = y - (material->glyphSize - metric.bearing.y);
+        float y2 = y + (material->glyphSize - metric.bearing.y);
 
-        glm::mat4 translation = glm::translate(glm::vec3(x2, y2, 0));
+        glm::mat4 translation = glm::translate(glm::vec3(x2, -y2, 0));
         glm::mat4 scale = glm::scale(glm::vec3(material->glyphSize, material->glyphSize, 0));
         transforms.push_back(translation * scale);
         layers.push_back((int)text[i]);
