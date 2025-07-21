@@ -50,6 +50,8 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
+
     gladLoadGL();
     glDebugMessageCallbackARB(&DebugOutputCallback, NULL);
 
@@ -117,7 +119,7 @@ int main()
         accumulated += deltaTime;
         if (accumulated >= 1.0f) {
             accumulated = 0.0f;
-            sprintf(buf, "FPS: %.2f", 1.0f/deltaTime);
+            sprintf(buf, "FPS: %.0f", 1.0f/deltaTime);
         }
         text.drawText(&font, glm::vec2(0, 000), buf);
         text.drawText(&font, glm::vec2(0, 100), "Hello Text!");

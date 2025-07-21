@@ -1,6 +1,3 @@
-# TODO
-bug: Framerate is capped at 60.
-
 # Compile
 
 ## Linux
