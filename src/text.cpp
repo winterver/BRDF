@@ -73,7 +73,9 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glm::mat4 projection = glm::ortho(0.0f, (float)width, -(float)height, 0.0f, 1000.0f, -1000.0f);
+    //glm::mat4 projection = glm::ortho(0.0f, (float)width, -(float)height, 0.0f, 1000.0f, -1000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)width/height, 0.1f, width*2.0f);
+    projection *= glm::lookAt(glm::vec3(width/2, -height/2, width/2), glm::vec3(width/2, -height/2, 0), glm::vec3(0, 1, 0));
 
     glUseProgram(textprog);
     GLuint projection_Location = glGetUniformLocation(textprog, "projection");
