@@ -32,8 +32,8 @@ void SkyboxRenderPass::drawSkybox(Camera* camera, SkyboxMaterial* material) {
     glUniform1i(skybox_Location, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, material->getCubeMap());
-    glDepthMask(GL_FALSE);
+    glDisable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
 }

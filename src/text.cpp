@@ -73,7 +73,7 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glm::mat4 projection = glm::ortho(0.0f, (float)width, -(float)height, 0.0f);
+    glm::mat4 projection = glm::ortho(0.0f, (float)width, -(float)height, 0.0f, 1000.0f, -1000.0f);
 
     glUseProgram(textprog);
     GLuint projection_Location = glGetUniformLocation(textprog, "projection");
@@ -141,7 +141,7 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::mat4& transform
         float x2 = x + metric.bearing.x * factor;
         float y2 = y + (material->glyphSize - metric.bearing.y) * factor;
 
-        glm::mat4 scale = glm::scale(glm::vec3(material->glyphSize, material->glyphSize, 0));
+        glm::mat4 scale = glm::scale(glm::vec3(material->glyphSize * factor, material->glyphSize * factor, 0));
         glm::mat4 translation = glm::translate(glm::vec3(x2, -y2, 0));
         glm::mat4 position = glm::translate(glm::vec3(pos.x, -pos.y, 0));
         glm::mat4 final_matrix = position * transform * translation * scale;
@@ -162,8 +162,8 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::mat4& transform
     glUniform4fv(color_Location, 1, &color[0]);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, material->textureArray);
-    glDepthMask(GL_FALSE);
+    glDisable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, transforms.size());
-    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
 }
