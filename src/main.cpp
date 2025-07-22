@@ -137,7 +137,7 @@ int main()
         text.drawText(&cour, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
             64, glm::vec2(0, 300), "Hello Text!");
         text.drawText(&font, glm::rotate(glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::vec4(0.0f, 1.0f, 1.0f, 1.0f), 80, glm::vec2(200, 700),
+            glm::vec4(0.0f, 1.0f, 1.0f, 1.0f), 80, glm::vec2(200, 400),
             "Gallia est omnis divisa in partes tres,\n"
             "Quarum unam incolunt Belgae, aliam Aquitani,\n"
             "Tertiam qui ipsorum linuga Celtae, nostra\n"
