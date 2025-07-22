@@ -491,11 +491,12 @@ R"( #version 330 core
     in vec3 UV;
 
     uniform sampler2DArray text;
+    uniform vec4 color;
 
     void main()
     {
         float sampled = texture(text, UV).r;
-        FragColor = vec4(1.0) * vec4(vec3(1.0), sampled);
+        FragColor = color * vec4(vec3(1.0), sampled);
     }
 )";
 

@@ -61,12 +61,14 @@ void TextMaterial::loadFont(const char* path, int size) {
 }
 
 GLuint TextRenderPass::textprog;
+GLuint TextRenderPass::color_Location;
 
 TextRenderPass::TextRenderPass(GLFWwindow* window) {
     if (textprog == 0) {
         linkProgram(&textprog,
             Shaders::textVertexShader(),
             Shaders::textFragmentShader());
+        color_Location = glGetUniformLocation(textprog, "color");
     }
 
     int width, height;
@@ -107,35 +109,47 @@ TextRenderPass::TextRenderPass(GLFWwindow* window) {
     glEnableVertexAttribArray(layer_Location);
 }
 
-void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, const char* text) {
+void TextRenderPass::drawText(TextMaterial* material, float size, const glm::vec2& pos, const char* text) {
+    drawText(material, glm::mat4(1.0f), glm::vec4(1.0f), size, pos, text);
+}
+
+void TextRenderPass::drawText(TextMaterial* material, const glm::vec4& color, float size, const glm::vec2& pos, const char* text) {
+    drawText(material, glm::mat4(1.0f), color, size, pos, text);
+}
+
+void TextRenderPass::drawText(TextMaterial* material, const glm::mat4& transform, const glm::vec4& color, float size, const glm::vec2& pos, const char* text) {
     std::vector<glm::mat4> transforms;
     std::vector<int> layers;
     
-    float x = pos.x;
-    float y = pos.y;
+    float factor = size / material->glyphSize;
+    float x = 0;
+    float y = 0;
 
     for (int i = 0; text[i]; i++) {
         const auto& metric = material->metrics[text[i]];
 
         if (text[i] == '\n') {
-            y += metric.size.y * 1.2;
-            x = pos.x;
+            y += metric.size.y * factor;
+            x = 0;
             continue;
         }
         else if (text[i] == ' ') {
-            x += metric.advance;
+            x += metric.advance * factor;
             continue;
         }
 
-        float x2 = x + metric.bearing.x;
-        float y2 = y + (material->glyphSize - metric.bearing.y);
+        float x2 = x + metric.bearing.x * factor;
+        float y2 = y + (material->glyphSize - metric.bearing.y) * factor;
 
-        glm::mat4 translation = glm::translate(glm::vec3(x2, -y2, 0));
         glm::mat4 scale = glm::scale(glm::vec3(material->glyphSize, material->glyphSize, 0));
-        transforms.push_back(translation * scale);
+        glm::mat4 translation = glm::translate(glm::vec3(x2, -y2, 0));
+        glm::mat4 position = glm::translate(glm::vec3(pos.x, -pos.y, 0));
+        glm::mat4 final_matrix = position * transform * translation * scale;
+
+        transforms.push_back(final_matrix);
         layers.push_back((int)text[i]);
 
-        x += metric.advance;
+        x += metric.advance * factor;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, transformBuffer);
@@ -144,11 +158,12 @@ void TextRenderPass::drawText(TextMaterial* material, const glm::vec2& pos, cons
     glBindBuffer(GL_ARRAY_BUFFER, layerBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(int) * layers.size(), layers.data(), GL_STREAM_DRAW);
 
-    glDisable(GL_DEPTH_TEST);
     glUseProgram(textprog);
-    glBindVertexArray(vao);
+    glUniform4fv(color_Location, 1, &color[0]);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, material->textureArray);
+    glDepthMask(GL_FALSE);
+    glBindVertexArray(vao);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, transforms.size());
-    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
 }
